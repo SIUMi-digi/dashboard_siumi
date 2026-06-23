@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SiUMi — Sistem Informasi Pemantauan UMi KPPN Malang</title>
+<meta name="description" content="Sistem Informasi Pemantauan UMi KPPN Malang — Dashboard monitoring penyaluran pembiayaan ultra mikro wilayah KPPN Malang dan perbandingan se-Jawa Timur.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --nv:#0d2951;--bl:#1a5fb4;--bll:#3584e4;--blb:#ddeeff;
+  --gn:#2e7d32;--gnb:#e8f5e9;--yw:#f57f17;--ywb:#fff8e1;
+  --rd:#b71c1c;--rdb:#ffebee;--br:#e0e0e0;
+  --bg:#f5f7fa;--card:#ffffff;--text:#1a1a2e;--text2:#6b7280;--text3:#9ca3af;
+  --radius:8px;--radius-lg:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+#app{display:flex;flex-direction:column;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--nv);color:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.topbar h1{font-size:20px;font-weight:600;letter-spacing:.3px}
+.tg{font-size:11px;opacity:.65;margin-top:1px}
+.blv{background:#2e7d32;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;margin-left:8px;font-weight:500}
+.nb button{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;padding:5px 11px;border-radius:6px;font-size:12px;cursor:pointer;margin-left:4px;transition:background .15s}
+.nb button.active,.nb button:hover{background:var(--bll)}
+
+/* SIDEBAR */
+.sb{width:210px;background:var(--card);border-right:1px solid var(--br);padding:12px 0;position:fixed;top:56px;left:0;bottom:0;overflow-y:auto;z-index:50;transition:transform .25s}
+.sb a{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:13px;color:var(--text2);text-decoration:none;cursor:pointer;border-left:3px solid transparent;transition:all .15s}
+.sb a:hover{background:#f0f4ff;color:var(--bl)}
+.sb a.active{background:#e8f0fe;color:var(--bl);border-left-color:var(--bl);font-weight:500}
+.sl{font-size:10px;font-weight:600;letter-spacing:.8px;color:var(--text3);padding:12px 16px 4px;text-transform:uppercase}
+.nc{background:#b71c1c;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;vertical-align:middle}
+
+/* MAIN */
+.mn{margin-left:210px;margin-top:56px;padding:20px;position:relative;min-height:calc(100vh - 56px)}
+
+/* MOBILE */
+.menu-toggle{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;margin-right:8px}
+@media(max-width:768px){
+  .menu-toggle{display:block}
+  .sb{transform:translateX(-100%)}
+  .sb.open{transform:translateX(0)}
+  .mn{margin-left:0;padding:14px}
+  .r2{grid-template-columns:1fr !important}
+  .r3{grid-template-columns:1fr 1fr !important}
+  .kg{grid-template-columns:repeat(2,1fr) !important}
+  .sp-body{grid-template-columns:1fr !important}
+  #tut-popup{width:calc(100vw - 40px);max-width:290px}
+  .topbar h1{font-size:17px}
+  .tg{display:none}
+}
+@media(max-width:480px){
+  .r3{grid-template-columns:1fr !important}
+  .kg{grid-template-columns:repeat(2,1fr) !important}
+  .fgd{grid-template-columns:1fr !important}
+}
+
+/* LAYOUT */
+.pg{display:none}.pg.active{display:block}
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+.kc{background:var(--card);border:1px solid var(--br);border-radius:var(--radius);padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.kc .lb{font-size:11px;color:var(--text2);margin-bottom:3px}
+.kc .vl{font-size:22px;font-weight:600}
+.kc .s{font-size:11px;margin-top:2px;color:var(--text2)}
+.kc.info .vl{color:var(--bl)}.kc.ok .vl{color:var(--gn)}.kc.warn .vl{color:var(--yw)}.kc.bad .vl{color:var(--rd)}
+.r2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:14px}
+.r3{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:14px}
+.cd{background:var(--card);border:1px solid var(--br);border-radius:var(--radius-lg);padding:14px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.ct{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.bdg{font-size:10px;padding:2px 8px;border-radius:12px;font-weight:500}
+.bg{background:#e8f5e9;color:#1b5e20}.by{background:#fff8e1;color:#e65100}
+.br2{background:#ffebee;color:#b71c1c}.bb{background:#ddeeff;color:#0d47a1}
+.clt{cursor:pointer;user-select:none;transition:opacity .15s}.clt:hover{opacity:.72}
+.il{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:500;cursor:pointer;user-select:none;transition:opacity .15s}.il:hover{opacity:.75}
+.ip{background:#e8f5e9;color:#1b5e20}.is{background:#ddeeff;color:#0d47a1}.iw{background:#fff8e1;color:#e65100}
+.stb{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--br);overflow-x:auto}
+.stb button{padding:7px 14px;font-size:12px;background:none;border:none;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s}
+.stb button.active{color:var(--bl);border-bottom-color:var(--bl);font-weight:500}
+.sp2{display:none}.sp2.active{display:block}
+.rb{height:7px;border-radius:4px;background:#f0f0f0;overflow:hidden;margin-top:3px}
+.rf{height:100%;border-radius:4px}
+.tu{color:#2e7d32}.td2{color:#b71c1c}.tf{color:#9ca3af}
+
+/* TOOLBAR */
+.tbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;padding:9px 12px;background:#f8f9fc;border-radius:var(--radius);border:1px solid var(--br)}
+.tbar select,.tbar input[type=text]{border:1px solid var(--br);background:#fff;color:var(--text);padding:5px 9px;border-radius:6px;font-size:12px;outline:none}
+.tbar input[type=text]{min-width:140px}
+.tbar input[type=text]:focus,.tbar select:focus{border-color:var(--bl)}
+.sp3{width:1px;height:20px;background:var(--br);margin:0 2px}
+
+/* BUTTONS */
+.btn-p{background:var(--bl);color:#fff;border:none;padding:5px 13px;border-radius:6px;font-size:12px;cursor:pointer;transition:background .15s}
+.btn-p:hover{background:var(--bll)}
+.btn-s{background:#fff;color:var(--text);border:1px solid var(--br);padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;transition:background .15s}
+.btn-s:hover{background:#f5f5f5}
+.btn-xl{background:#e8f5e9;color:#1b5e20;border:1px solid #2e7d32;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:background .15s}
+.btn-xl:hover{background:#c8e6c9}
+.btn-pdf{background:#ffebee;color:#b71c1c;border:1px solid #b71c1c;padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:background .15s}
+.btn-pdf:hover{background:#ffcdd2}
+.xb{display:flex;gap:6px;align-items:center}
+.help-btn{width:23px;height:23px;border-radius:50%;border:1.5px solid var(--bl);color:var(--bl);background:#fff;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .15s}
+.help-btn:hover{background:var(--blb)}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f8f9fc;padding:6px 8px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--br);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--br);color:var(--text)}
+tr:hover td{background:#f9fafb}
+.al{display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--br)}
+.ai{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+.ai.bad{background:#ffebee;color:var(--rd)}.ai.warn{background:#fff8e1;color:var(--yw)}.ai.info{background:#ddeeff;color:var(--bl)}
+
+/* FORM */
+.pg-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.pg-head-l{display:flex;align-items:center;gap:8px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:12px;color:var(--text2);font-weight:500}
+.fg input,.fg select,.fg textarea{border:1px solid var(--br);border-radius:6px;padding:6px 9px;font-size:13px;background:#fff;color:var(--text);outline:none}
+.fg input:focus,.fg select:focus{border-color:var(--bl)}
+.fg textarea{resize:vertical;min-height:60px}
+.fgd{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ub{border:2px dashed var(--br);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:all .15s}
+.ub:hover,.ub.drag{border-color:var(--bll);background:var(--blb)}
+.ub i{font-size:32px;color:var(--bll);display:block;margin-bottom:6px}
+.pw{background:#f0f0f0;border-radius:4px;height:7px;overflow:hidden;margin:5px 0}
+.pf{height:100%;background:var(--bl);border-radius:4px;transition:width .3s}
+.ptbl{max-height:240px;overflow-y:auto;border:1px solid var(--br);border-radius:var(--radius)}
+.hr{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--br);font-size:12px}
+.ab{background:var(--blb);color:#0d47a1;font-size:10px;padding:2px 7px;border-radius:12px}
+.tclk{font-size:11px;color:rgba(255,255,255,.6)}
+
+/* STATUS PANEL */
+#sp-panel{display:none;margin-bottom:16px;animation:fadeIn .2s ease}
+.sp-card{background:var(--card);border-radius:var(--radius-lg);border:1px solid var(--br);overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.sp-head{padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sp-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.sp-body{padding:0 18px 16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:14px}
+.sp-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:5px}
+.sp-txt{font-size:13px;color:var(--text);line-height:1.55}
+.sp-act{border-radius:8px;padding:12px}
+
+/* TOOLTIP */
+#tut-popup{position:absolute;display:none;width:272px;z-index:200;filter:drop-shadow(0 6px 20px rgba(13,41,81,.45))}
+.tp-arr-up{width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:9px solid #0d2951;margin-left:22px}
+.tp-arr-dn{width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:9px solid #0d2951;margin-left:22px;display:none}
+.tp-box{background:#0d2951;color:#fff;border-radius:var(--radius-lg);padding:13px 15px}
+.tp-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.tp-tag{font-size:10px;opacity:.5;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.tp-dots{display:flex;gap:3px}
+.tp-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25)}.tp-dot.on{background:#fff}
+.tp-x{background:none;border:none;color:rgba(255,255,255,.45);cursor:pointer;font-size:16px;padding:0;line-height:1}
+.tp-title{font-size:13px;font-weight:600;margin-bottom:5px;line-height:1.3}
+.tp-desc{font-size:12px;opacity:.85;line-height:1.6;margin-bottom:10px}
+.tp-nav{display:flex;justify-content:flex-end;align-items:center;gap:6px}
+.tp-btn-s{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;padding:4px 11px;border-radius:6px;font-size:11px;cursor:pointer}
+.tp-btn-p{background:#fff;color:#0d2951;border:none;padding:4px 13px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600}
+.tp-skip{background:none;border:none;color:rgba(255,255,255,.45);font-size:11px;text-decoration:underline;cursor:pointer;margin-right:4px}
+.hl-ring{outline:2.5px solid #74c7ec !important;outline-offset:3px;border-radius:6px;position:relative;z-index:49}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* FINDING MODAL */
+#finding-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,41,81,.6);z-index:900;overflow-y:auto;padding:20px 12px;backdrop-filter:blur(2px)}
+.fm-modal{background:#fff;border-radius:14px;max-width:740px;margin:0 auto;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.32);animation:modalIn .22s ease}
+.fm-tab{padding:9px 14px;font-size:12px;background:none;border:none;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s;display:inline-flex;align-items:center;gap:5px}
+.fm-tab.active{color:var(--bl);border-bottom-color:var(--bl);font-weight:500}
+.fm-tab:hover:not(.active){color:var(--text);background:#f8f9fc}
+.fm-content{display:none;padding:18px 20px}
+.fm-content.active{display:block}
+.fm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.fm-info-box{background:#f8f9fc;border-radius:8px;padding:11px 13px}
+.fm-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.fm-val{font-size:13px;color:var(--text);line-height:1.55}
+.step-item{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid var(--br)}
+.step-item:last-child{border-bottom:none}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--bl);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-text{font-size:12.5px;color:var(--text);line-height:1.65}
+.fm-status-sel{border:1px solid var(--br);border-radius:7px;padding:7px 11px;font-size:13px;background:#fff;color:var(--text);outline:none;cursor:pointer;transition:border-color .15s}
+.fm-status-sel:focus{border-color:var(--bl)}
+
+@media(max-width:600px){.fm-grid{grid-template-columns:1fr}.fm-tab{padding:7px 10px;font-size:11px}}
+/* YEAR FILTER */
+.yr-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;background:#f0f4ff;border-radius:8px;margin-bottom:8px;flex-wrap:wrap}
+.yr-pill{padding:4px 14px;border-radius:20px;border:1.5px solid var(--bl);background:#fff;color:var(--bl);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.yr-pill:hover{background:#e3f0ff}
+.yr-pill.active{background:var(--bl);color:#fff}
+.yr-lbl{font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;background:var(--blb);color:var(--bl)}
+.sel-sm{border:1px solid var(--br);border-radius:6px;padding:4px 8px;font-size:12px;background:#fff;color:var(--text);outline:none;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+    <i class="ti ti-wave-square" style="font-size:22px;color:#74c7ec" aria-hidden="true"></i>
+    <div>
+      <h1>SiUMi</h1>
+      <div class="tg">Sistem Informasi Pemantauan UMi — KPPN Malang</div>
+    </div>
+    <span class="blv">● Live</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="tclk" id="clock"></div>
+    <div class="nb">
+      <button onclick="setMode('r')" id="btn-r" class="active">Ringkas</button>
+      <button onclick="setMode('d')" id="btn-d">Detail</button>
+    </div>
+  </div>
+</div>
+
+<div class="sb" id="sidebar">
+  <div class="sl">Monitoring</div>
+  <a onclick="showPage('dashboard')" id="nav-dashboard" class="active"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</a>
+  <a onclick="showPage('monitoring')" id="nav-monitoring"><i class="ti ti-chart-bar" aria-hidden="true"></i>Penyaluran</a>
+  <a onclick="showPage('validasi')" id="nav-validasi"><i class="ti ti-shield-check" aria-hidden="true"></i>Validasi Data</a>
+  <div class="sl">Analisis</div>
+  <a onclick="showPage('analisis')" id="nav-analisis"><i class="ti ti-trending-up" aria-hidden="true"></i>Analisis Debitur</a>
+  <a onclick="showPage('wilayah')" id="nav-wilayah"><i class="ti ti-map-pin" aria-hidden="true"></i>Per Wilayah</a>
+  <div class="sl">Sistem</div>
+  <a onclick="showPage('input')" id="nav-input"><i class="ti ti-upload" aria-hidden="true"></i>Input &amp; Upload</a>
+  <a onclick="showPage('laporan')" id="nav-laporan"><i class="ti ti-file-export" aria-hidden="true"></i>Laporan</a>
+  <a onclick="showPage('alert')" id="nav-alert"><i class="ti ti-bell" aria-hidden="true"></i>Notifikasi<span class="nc">3</span></a>
+</div>
+
+<div class="mn" id="mn">
+
+<!-- STATUS PANEL -->
+<div id="sp-panel">
+  <div class="sp-card">
+    <div class="sp-head" id="sp-head">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="sp-icon" id="sp-icon"></div>
+        <div><div id="sp-title" style="font-size:15px;font-weight:600"></div><div id="sp-sub" style="font-size:11px;margin-top:2px;opacity:.7"></div></div>
+      </div>
+      <button onclick="closeSP()" style="background:rgba(0,0,0,.07);border:none;cursor:pointer;padding:5px 12px;border-radius:6px;font-size:12px;color:var(--text2)">Tutup ✕</button>
+    </div>
+    <div style="height:1px;background:var(--br);margin:0 18px"></div>
+    <div class="sp-body" id="sp-body"></div>
+  </div>
+</div>
+
+<!-- TOOLTIP -->
+<div id="tut-popup">
+  <div id="tut-arr-up" class="tp-arr-up"></div>
+  <div class="tp-box">
+    <div class="tp-hd">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tp-tag" id="tut-tag"></span>
+        <div class="tp-dots" id="tut-dots"></div>
+      </div>
+      <button class="tp-x" onclick="closeTut()">✕</button>
+    </div>
+    <div class="tp-title" id="tut-title"></div>
+    <div class="tp-desc" id="tut-desc"></div>
+    <div class="tp-nav">
+      <button id="tut-back" class="tp-btn-s" onclick="tutNav(-1)" style="display:none">← Kembali</button>
+      <button class="tp-skip" onclick="closeTut()">Lewati</button>
+      <button id="tut-next" class="tp-btn-p" onclick="tutNav(1)"></button>
+    </div>
+  </div>
+  <div id="tut-arr-dn" class="tp-arr-dn"></div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="pg active" id="page-dashboard">
+  <div class="pg-head">
+    <div class="pg-head-l">
+      <div><div style="font-size:17px;font-weight:600">Dashboard Utama</div><div style="font-size:11px;color:var(--text2)">Diperbarui 19 Mei 2026</div></div>
+      <button class="help-btn" onclick="startTut('dashboard')" title="Panduan halaman ini" aria-label="Panduan">?</button>
+    </div>
+    <div class="xb" id="db-export">
+      <button class="btn-xl" onclick="exportXL('dashboard')"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i>Excel</button>
+      <button class="btn-pdf" onclick="exportPDF('dashboard')"><i class="ti ti-file-text" aria-hidden="true"></i>PDF</button>
+    </div>
+  </div>
+  <div class="tbar" id="db-filter">
+    <i class="ti ti-filter" style="font-size:14px;color:var(--text2)" aria-hidden="true"></i>
+    <input type="text" placeholder="Cari data...">
+    <div class="sp3"></div>
+    <select id="db-wil"><option value="">Semua Wilayah</option><option>Kab. Malang</option><option>Kota Malang</option><option>Kota Batu</option><option>Kab. Pasuruan</option><option>Kota Pasuruan</option></select>
+    <select id="db-bln" onchange="applyPeriodUI('db')"><option value="">Semua Bulan</option><option value="1">Januari</option><option value="2">Februari</option><option value="3">Maret</option><option value="4">April</option><option value="5">Mei</option><option value="6">Juni</option></select>
+    <select id="db-thn" onchange="applyPeriodUI('db')"><option value="">Semua Tahun</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option></select>
+    <button class="btn-s" onclick="resetF('db')">Reset</button>
+  </div>
+  <div class="kg" id="db-kpi">
+    <div class="kc info"><div class="lb">Total Penyaluran</div><div class="vl">Rp134,35 M</div><div class="s"><span class="tu">▲ 18%</span> vs sebelum</div></div>
+    <div class="kc ok"><div class="lb">Total Debitur Aktif</div><div class="vl">23.402</div><div class="s"><span class="tu">▲ 12%</span> vs sebelum</div></div>
+    <div class="kc ok"><div class="lb">Data Valid</div><div class="vl">94,2%</div><div class="s"><span class="tu">▲ 2,1%</span></div></div>
+    <div class="kc warn"><div class="lb">Data Mismatch</div><div class="vl">38</div><div class="s td2">perlu dicek</div></div>
+    <div class="kc warn"><div class="lb">Kasus Terlambat</div><div class="vl">7</div><div class="s tf">stabil</div></div>
+    <div class="kc bad"><div class="lb">Wilayah Berisiko</div><div class="vl">2</div><div class="s tf">Kota Batu, Kota Pas.</div></div>
+    <div class="kc info"><div class="lb">Data Diperbarui</div><div class="vl">156</div><div class="s tf">entri bulan ini</div></div>
+    <div class="kc ok"><div class="lb">Perubahan Debitur</div><div class="vl" style="color:var(--gn)">+12%</div><div class="s"><span class="tu">▲ meningkat</span></div></div>
+  </div>
+  <div class="r2" id="db-chart1">
+    <div class="cd" style="margin:0"><div class="ct">Tren penyaluran per bulan</div><div style="position:relative;height:175px"><canvas id="c1"></canvas></div></div>
+    <div class="cd" style="margin:0">
+      <div class="ct">Panel risiko &amp; validasi</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div><div style="display:flex;justify-content:space-between;font-size:12px"><span>Kab. Malang</span><span style="color:var(--gn)">96%</span></div><div class="rb"><div class="rf" style="width:96%;background:#2e7d32"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12px"><span>Kota Malang</span><span style="color:var(--gn)">94%</span></div><div class="rb"><div class="rf" style="width:94%;background:#2e7d32"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12px"><span>Kota Batu</span><span style="color:var(--yw)">88%</span></div><div class="rb"><div class="rf" style="width:88%;background:#f57f17"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12px"><span>Kab. Pasuruan</span><span style="color:var(--gn)">95%</span></div><div class="rb"><div class="rf" style="width:95%;background:#2e7d32"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12px"><span>Kota Pasuruan</span><span style="color:var(--yw)">87%</span></div><div class="rb"><div class="rf" style="width:87%;background:#f57f17"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="r2" id="db-chart2" style="margin-top:0">
+    <div class="cd" style="margin:0"><div class="ct">Analisis kebutuhan debitur — KPPN</div><div style="position:relative;height:175px"><canvas id="c2"></canvas></div></div>
+    <div class="cd" style="margin:0"><div class="ct">Analisis kebutuhan debitur — vs Jawa Timur</div><div style="position:relative;height:175px"><canvas id="c3"></canvas></div></div>
+  </div>
+  <div class="r2" id="db-bottom" style="margin-top:0">
+    <div class="cd" style="margin:0">
+      <div class="ct">Status kebutuhan per wilayah <span style="font-size:10px;font-weight:400;color:var(--text2)">klik status untuk penjelasan</span></div>
+      <table>
+        <tr><th>Wilayah</th><th>Debitur</th><th>Penyaluran</th><th>Status</th></tr>
+        <tr><td>Kab. Malang</td><td>11.006</td><td>Rp61,95 M</td><td><span class="il ip" onclick="showSP('meningkat')">Kebutuhan meningkat</span></td></tr>
+        <tr><td>Kota Malang</td><td>2.095</td><td>Rp11,55 M</td><td><span class="il ip" onclick="showSP('meningkat')">Kebutuhan meningkat</span></td></tr>
+        <tr><td>Kota Batu</td><td>618</td><td>Rp3,48 M</td><td><span class="il is" onclick="showSP('stabil')">Stabil</span></td></tr>
+        <tr><td>Kab. Pasuruan</td><td>8.267</td><td>Rp49,14 M</td><td><span class="il ip" onclick="showSP('meningkat')">Kebutuhan meningkat</span></td></tr>
+        <tr><td>Kota Pasuruan</td><td>1.416</td><td>Rp8,22 M</td><td><span class="il is" onclick="showSP('stabil')">Stabil</span></td></tr>
+      </table>
+    </div>
+    <div class="cd" style="margin:0">
+      <div class="ct">Alert prioritas <span class="bdg br2 clt" onclick="showSP('kritis')">3 Kritis</span></div>
+      <div class="al"><div class="ai bad"><i class="ti ti-alert-circle" aria-hidden="true"></i></div><div><div style="font-size:12px;font-weight:500">Mismatch — Kota Pasuruan / Pegadaian</div><div style="font-size:11px;color:var(--text2)">Nilai tidak konsisten · perlu rekonsiliasi</div></div></div>
+      <div class="al"><div class="ai bad"><i class="ti ti-clock-exclamation" aria-hidden="true"></i></div><div><div style="font-size:12px;font-weight:500">Terlambat — Kota Batu / BAV</div><div style="font-size:11px;color:var(--text2)">Laporan Maret belum masuk</div></div></div>
+      <div class="al"><div class="ai warn"><i class="ti ti-file-x" aria-hidden="true"></i></div><div><div style="font-size:12px;font-weight:500">Data tidak lengkap — Kab. Malang / PNM</div><div style="font-size:11px;color:var(--text2)">38 record tanpa kode sektor</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MONITORING -->
+<div class="pg" id="page-monitoring">
+  <div class="pg-head">
+    <div class="pg-head-l">
+      <div><div style="font-size:17px;font-weight:600">Monitoring Penyaluran UMi</div><div style="font-size:11px;color:var(--text2)">Rincian per penyalur dan wilayah</div></div>
+      <button class="help-btn" onclick="startTut('monitoring')" aria-label="Panduan">?</button>
+    </div>
+    <div class="xb" id="mn-export">
+      <button class="btn-xl" onclick="exportXL('monitoring')"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i>Excel</button>
+      <button class="btn-pdf" onclick="exportPDF('monitoring')"><i class="ti ti-file-text" aria-hidden="true"></i>PDF</button>
+    </div>
+  </div>
+  <div class="tbar" id="mn-filter">
+    <i class="ti ti-filter" style="font-size:14px;color:var(--text2)" aria-hidden="true"></i>
+    <input type="text" id="mn-search" placeholder="Cari wilayah atau penyalur..." oninput="filterTbl('mn')">
+    <div class="sp3"></div>
+    <select id="mn-wil" onchange="filterTbl('mn')"><option value="">Semua Wilayah</option><option>Kab. Malang</option><option>Kota Malang</option><option>Kota Batu</option><option>Kab. Pasuruan</option><option>Kota Pasuruan</option></select>
+    <select id="mn-pny" onchange="filterTbl('mn')"><option value="">Semua Penyalur</option><option>Koperasi Mitra Dhuafa</option><option>Permodalan Nasional Madani</option><option>PT Bahana Artha Ventura</option><option>PT Pegadaian</option></select>
+    <select id="mn-sts" onchange="filterTbl('mn')"><option value="">Semua Status</option><option>Valid</option><option>Cek</option><option>Mismatch</option></select>
+    <div class="sp3"></div>
+    <select id="mn-bln" onchange="applyPeriodUI('mn')"><option value="">Semua Bulan</option><option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Apr</option><option value="5">Mei</option><option value="6">Jun</option></select>
+    <select id="mn-thn" onchange="applyPeriodUI('mn')"><option value="">Semua Tahun</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option></select>
+    <button class="btn-s" onclick="resetF('mn')">Reset</button>
+  </div>
+  <div class="cd" id="mn-table">
+    <div class="ct">Rekap penyaluran <span id="mn-period-lbl" style="color:var(--bl);font-weight:600">Kumulatif 2026</span> <span id="mn-count" class="bdg bb">13 data</span></div>
+    <div style="overflow-x:auto">
+    <table id="tbl-monitoring">
+      <tr><th>Wilayah</th><th>Penyalur</th><th>Debitur</th><th>Penyaluran (Rp)</th><th>% Total</th><th>Status</th></tr>
+      <tr data-wil="Kab. Malang" data-pny="Koperasi Mitra Dhuafa" data-sts="Valid"><td>Kab. Malang</td><td>Koperasi Mitra Dhuafa</td><td>459</td><td>1.726.600.000</td><td>1,28%</td><td><span class="bdg bg clt" onclick="showSP('valid')">Valid</span></td></tr>
+      <tr data-wil="Kab. Malang" data-pny="Permodalan Nasional Madani" data-sts="Valid"><td>Kab. Malang</td><td>Permodalan Nasional Madani</td><td>10.501</td><td>59.654.500.000</td><td>44,20%</td><td><span class="bdg bg clt" onclick="showSP('valid')">Valid</span></td></tr>
+      <tr data-wil="Kota Malang" data-pny="Permodalan Nasional Madani" data-sts="Valid"><td>Kota Malang</td><td>Permodalan Nasional Madani</td><td>2.011</td><td>11.052.500.000</td><td>8,19%</td><td><span class="bdg bg clt" onclick="showSP('valid')">Valid</span></td></tr>
+      <tr data-wil="Kota Malang" data-pny="PT Pegadaian" data-sts="Cek"><td>Kota Malang</td><td>PT Pegadaian</td><td>27</td><td>319.700.000</td><td>0,24%</td><td><span class="bdg by clt" onclick="showSP('cek')">Cek</span></td></tr>
+      <tr data-wil="Kota Batu" data-pny="Permodalan Nasional Madani" data-sts="Cek"><td>Kota Batu</td><td>Permodalan Nasional Madani</td><td>534</td><td>3.116.000.000</td><td>2,31%</td><td><span class="bdg by clt" onclick="showSP('cek')">Cek</span></td></tr>
+      <tr data-wil="Kota Batu" data-pny="Koperasi Mitra Dhuafa" data-sts="Valid"><td>Kota Batu</td><td>Koperasi Mitra Dhuafa</td><td>73</td><td>252.500.000</td><td>0,19%</td><td><span class="bdg bg clt" onclick="showSP('valid')">Valid</span></td></tr>
+      <tr data-wil="Kab. Pasuruan" data-pny="Permodalan Nasional Madani" data-sts="Valid"><td>Kab. Pasuruan</td><td>Permodalan Nasional Madani</td><td>8.010</td><td>46.075.500.000</td><td>34,15%</td><td><span class="bdg bg clt" onclick="showSP('valid')">Valid</span></td></tr>
+      <tr data-wil="Kab. Pasuruan" data-pny="PT Pegadaian" data-sts="Valid"><td>Kab. Pasuruan</td><td>PT Pegadaian</td><td>22</td><td>256.000.000</td><td>0,19%</td><td><span class="bdg bg clt" onclick="showSP('valid')">Valid</span></td></tr>
+      <tr data-wil="Kota Pasuruan" data-pny="Permodalan Nasional Madani" data-sts="Valid"><td>Kota Pasuruan</td><td>Permodalan Nasional Madani</td><td>1.387</td><td>8.064.000.000</td><td>5,98%</td><td><span class="bdg bg clt" onclick="showSP('valid')">Valid</span></td></tr>
+      <tr data-wil="Kota Pasuruan" data-pny="PT Pegadaian" data-sts="Mismatch"><td>Kota Pasuruan</td><td>PT Pegadaian</td><td>9</td><td>97.500.000</td><td>0,07%</td><td><span class="bdg br2 clt" onclick="showSP('mismatch')">Mismatch</span></td></tr>
+    </table>
+    </div>
+    <div style="padding:6px 0;font-size:12px;color:var(--text2);border-top:1px solid var(--br);margin-top:4px">Total: 23.033 debitur · Rp130.614.200.000</div>
+  </div>
+</div>
+
+<!-- VALIDASI -->
+<div class="pg" id="page-validasi">
+  <div class="pg-head">
+    <div class="pg-head-l">
+      <div><div style="font-size:17px;font-weight:600">Ketepatan &amp; Validasi Data</div><div style="font-size:11px;color:var(--text2)">Hasil auto-validasi · klik level risiko untuk penjelasan</div></div>
+      <button class="help-btn" onclick="startTut('validasi')" aria-label="Panduan">?</button>
+    </div>
+    <div class="xb" id="vl-export">
+      <button class="btn-xl" onclick="exportXL('validasi')"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i>Excel</button>
+      <button class="btn-pdf" onclick="exportPDF('validasi')"><i class="ti ti-file-text" aria-hidden="true"></i>PDF</button>
+    </div>
+  </div>
+  <div class="tbar" id="vl-filter">
+    <i class="ti ti-filter" style="font-size:14px;color:var(--text2)" aria-hidden="true"></i>
+    <input type="text" id="vl-search" placeholder="Cari wilayah atau masalah..." oninput="filterTbl('vl')">
+    <div class="sp3"></div>
+    <select id="vl-wil" onchange="filterTbl('vl')"><option value="">Semua Wilayah</option><option>Kota Pasuruan</option><option>Kota Batu</option><option>Kab. Malang</option><option>Kab. Pasuruan</option><option>Kota Malang</option></select>
+    <select id="vl-risk" onchange="filterTbl('vl')"><option value="">Semua Risiko</option><option>Tinggi</option><option>Sedang</option></select>
+    <div class="sp3"></div>
+    <select id="vl-bln" onchange="applyPeriodUI('vl')"><option value="">Semua Bulan</option><option value="1">Jan</option><option value="2">Feb</option><option value="3">Mar</option><option value="4">Apr</option><option value="5">Mei</option><option value="6">Jun</option></select>
+    <select id="vl-thn" onchange="applyPeriodUI('vl')"><option value="">Semua Tahun</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option></select>
+    <button class="btn-s" onclick="resetF('vl')">Reset</button>
+  </div>
+  <div class="r3" id="vl-kpi">
+    <div class="kc ok"><div class="lb">Record valid</div><div class="vl">2.847</div><div style="font-size:11px;color:var(--gn)">94,2%</div></div>
+    <div class="kc warn"><div class="lb">Warning</div><div class="vl">133</div><div style="font-size:11px;color:var(--yw)">perlu konfirmasi</div></div>
+    <div class="kc bad"><div class="lb">Critical</div><div class="vl">38</div><div style="font-size:11px;color:var(--rd)">perlu tindak lanjut</div></div>
+  </div>
+  <div class="cd" id="vl-table">
+    <div class="ct">Detail temuan validasi <span class="bdg by">Auto-generated</span> <span id="vl-period-lbl" style="color:var(--bl);font-weight:600;margin-left:4px">Kumulatif 2026</span> <span id="vl-count" class="bdg bb" style="margin-left:4px">7 temuan</span></div>
+    <table id="tbl-validasi">
+      <tr><th>Wilayah</th><th>Penyalur</th><th>Jenis Masalah</th><th>Record</th><th>Risiko</th><th>Aksi</th></tr>
+      <tr data-wil="Kota Pasuruan" data-risk="Tinggi"><td>Kota Pasuruan</td><td>PT Pegadaian</td><td>Nilai tidak wajar &gt;Rp10jt</td><td>4</td><td><span class="bdg br2 clt" onclick="showSP('r-tinggi')">Tinggi</span></td><td><button id="lihat-btn-0" class="btn-p" style="padding:2px 8px;font-size:11px" onclick="showFinding(0)"><i class="ti ti-eye" style="font-size:11px"></i> Lihat</button></td></tr>
+      <tr data-wil="Kota Batu" data-risk="Tinggi"><td>Kota Batu</td><td>BAV</td><td>Laporan Maret tidak ada</td><td>1</td><td><span class="bdg br2 clt" onclick="showSP('r-tinggi')">Tinggi</span></td><td><button id="lihat-btn-1" class="btn-p" style="padding:2px 8px;font-size:11px" onclick="showFinding(1)"><i class="ti ti-eye" style="font-size:11px"></i> Lihat</button></td></tr>
+      <tr data-wil="Kab. Malang" data-risk="Sedang"><td>Kab. Malang</td><td>PNM</td><td>Kode sektor kosong</td><td>38</td><td><span class="bdg by clt" onclick="showSP('r-sedang')">Sedang</span></td><td><button id="lihat-btn-2" class="btn-p" style="padding:2px 8px;font-size:11px" onclick="showFinding(2)"><i class="ti ti-eye" style="font-size:11px"></i> Lihat</button></td></tr>
+      <tr data-wil="Kab. Pasuruan" data-risk="Sedang"><td>Kab. Pasuruan</td><td>BAV</td><td>Duplikasi nama linkage</td><td>12</td><td><span class="bdg by clt" onclick="showSP('r-sedang')">Sedang</span></td><td><button id="lihat-btn-3" class="btn-p" style="padding:2px 8px;font-size:11px" onclick="showFinding(3)"><i class="ti ti-eye" style="font-size:11px"></i> Lihat</button></td></tr>
+      <tr data-wil="Kota Malang" data-risk="Sedang"><td>Kota Malang</td><td>PT Pegadaian</td><td>Format tanggal tidak konsisten</td><td>7</td><td><span class="bdg by clt" onclick="showSP('r-sedang')">Sedang</span></td><td><button id="lihat-btn-4" class="btn-p" style="padding:2px 8px;font-size:11px" onclick="showFinding(4)"><i class="ti ti-eye" style="font-size:11px"></i> Lihat</button></td></tr>
+      <tr data-wil="Kab. Malang" data-risk="Sedang"><td>Kab. Malang</td><td>PT Pegadaian</td><td>Nilai di bawah minimum</td><td>3</td><td><span class="bdg by clt" onclick="showSP('r-sedang')">Sedang</span></td><td><button id="lihat-btn-5" class="btn-p" style="padding:2px 8px;font-size:11px" onclick="showFinding(5)"><i class="ti ti-eye" style="font-size:11px"></i> Lihat</button></td></tr>
+      <tr data-wil="Kota Batu" data-risk="Sedang"><td>Kota Batu</td><td>PNM</td><td>Tenor melebihi batas normal</td><td>2</td><td><span class="bdg by clt" onclick="showSP('r-sedang')">Sedang</span></td><td><button id="lihat-btn-6" class="btn-p" style="padding:2px 8px;font-size:11px" onclick="showFinding(6)"><i class="ti ti-eye" style="font-size:11px"></i> Lihat</button></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ANALISIS -->
+<div class="pg" id="page-analisis">
+  <div class="pg-head">
+    <div class="pg-head-l">
+      <div><div style="font-size:17px;font-weight:600">Analisis Kebutuhan Debitur &amp; Pembiayaan</div><div style="font-size:11px;color:var(--text2)">Dinamika debitur vs nilai penyaluran</div></div>
+      <button class="help-btn" onclick="startTut('analisis')" aria-label="Panduan">?</button>
+    </div>
+    <div class="xb" id="an-export">
+      <button class="btn-xl" onclick="exportXL('analisis')"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i>Excel</button>
+      <button class="btn-pdf" onclick="exportPDF('analisis')"><i class="ti ti-file-text" aria-hidden="true"></i>PDF</button>
+    </div>
+  </div>
+  <div class="tbar" style="margin-bottom:6px;align-items:center;gap:10px">
+    <i class="ti ti-calendar" style="font-size:14px;color:var(--text2)" aria-hidden="true"></i>
+    <span style="font-size:12px;color:var(--text2);font-weight:500;white-space:nowrap">Tahun analisis:</span>
+    <div style="display:flex;gap:4px" id="an-yr-btns">
+      <button class="btn-s an-yr-btn" data-yr="2024" onclick="setAnYear(2024)" style="font-size:12px;padding:4px 12px">2024</button>
+      <button class="btn-s an-yr-btn" data-yr="2025" onclick="setAnYear(2025)" style="font-size:12px;padding:4px 12px">2025</button>
+      <button class="btn-p an-yr-btn" data-yr="2026" onclick="setAnYear(2026)" style="font-size:12px;padding:4px 12px">2026</button>
+    </div>
+    <div class="sp3"></div>
+    <span style="font-size:11px;padding:3px 10px;background:var(--blb);color:var(--bl);border-radius:12px;font-weight:500;white-space:nowrap" id="an-period-lbl">Kumulatif 2026</span>
+  </div>
+  <div class="stb" id="an-tabs">
+    <button class="active" onclick="showSub('sub-kppn',this)">Grafik KPPN</button>
+    <button onclick="showSub('sub-jatim',this)">vs Jawa Timur</button>
+    <button onclick="showSub('sub-triwulan',this)">Tren Triwulanan</button>
+    <button onclick="showSub('sub-demografi',this)">Demografi</button>
+    <button onclick="showSub('sub-sektor',this)">Sektor Usaha</button>
+  </div>
+  <div class="sp2 active" id="sub-kppn">
+    <div class="tbar" id="an-filter">
+      <i class="ti ti-filter" style="font-size:14px;color:var(--text2)" aria-hidden="true"></i>
+      <input type="text" placeholder="Cari wilayah..."><div class="sp3"></div>
+      <select><option value="">Semua Wilayah</option><option>Kab. Malang</option><option>Kota Malang</option><option>Kota Batu</option><option>Kab. Pasuruan</option><option>Kota Pasuruan</option></select>
+      <button class="btn-s">Reset</button>
+    </div>
+    <div class="r2" id="an-charts">
+      <div class="cd" style="margin:0"><div class="ct">Jumlah debitur per wilayah KPPN</div><div style="position:relative;height:210px"><canvas id="ca1"></canvas></div></div>
+      <div class="cd" style="margin:0"><div class="ct">Nilai penyaluran per wilayah (Rp M)</div><div style="position:relative;height:210px"><canvas id="ca2"></canvas></div></div>
+    </div>
+    <div class="cd" id="an-status">
+      <div class="ct">Analisis kebutuhan masyarakat <span style="font-size:10px;font-weight:400;color:var(--text2)">klik status untuk penjelasan</span></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:8px;padding:6px 10px;background:#f8f9fc;border-radius:6px">Nilai naik + debitur tetap → Kebutuhan meningkat &nbsp;·&nbsp; Stagnan → Stabil &nbsp;·&nbsp; Turun → Kebutuhan menurun</div>
+      <table>
+        <tr><th>Wilayah</th><th>Debitur</th><th>Penyaluran</th><th>Kondisi</th><th>Status</th></tr>
+        <tr><td>Kab. Malang</td><td>11.006</td><td>Rp61,95 M</td><td class="tu">↑ Naik</td><td><span class="il ip" onclick="showSP('meningkat')">Kebutuhan meningkat</span></td></tr>
+        <tr><td>Kota Malang</td><td>2.095</td><td>Rp11,55 M</td><td class="tu">↑ Naik</td><td><span class="il ip" onclick="showSP('meningkat')">Kebutuhan meningkat</span></td></tr>
+        <tr><td>Kota Batu</td><td>618</td><td>Rp3,48 M</td><td class="tf">→ Stabil</td><td><span class="il is" onclick="showSP('stabil')">Stabil</span></td></tr>
+        <tr><td>Kab. Pasuruan</td><td>8.267</td><td>Rp49,14 M</td><td class="tu">↑ Naik</td><td><span class="il ip" onclick="showSP('meningkat')">Kebutuhan meningkat</span></td></tr>
+        <tr><td>Kota Pasuruan</td><td>1.416</td><td>Rp8,22 M</td><td class="tf">→ Stabil</td><td><span class="il is" onclick="showSP('stabil')">Stabil</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="sp2" id="sub-jatim">
+    <div class="cd"><div class="ct">Perbandingan debitur KPPN Malang vs Jawa Timur</div><div style="position:relative;height:280px"><canvas id="cj1"></canvas></div></div>
+    <div class="cd"><div class="ct">Posisi KPPN Malang di Jawa Timur</div>
+      <table><tr><th>Wilayah</th><th>Debitur</th><th>Penyaluran</th><th>% Jatim</th><th>Ket.</th></tr>
+        <tr style="background:#f0f4ff"><td>Kab. Jember</td><td>13.634</td><td>Rp73,30 M</td><td>9,21%</td><td>Terbesar Jatim</td></tr>
+        <tr style="background:#f0f4ff"><td>Kota Surabaya</td><td>12.033</td><td>Rp70,05 M</td><td>8,13%</td><td>—</td></tr>
+        <tr style="background:#fffde7"><td><b>Kab. Malang ★</b></td><td>11.006</td><td>Rp61,95 M</td><td>7,44%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+        <tr style="background:#fffde7"><td><b>Kab. Pasuruan ★</b></td><td>8.267</td><td>Rp49,14 M</td><td>5,58%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+        <tr style="background:#fffde7"><td><b>Kota Malang ★</b></td><td>2.095</td><td>Rp11,55 M</td><td>1,42%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+        <tr style="background:#fffde7"><td><b>Kota Pasuruan ★</b></td><td>1.416</td><td>Rp8,22 M</td><td>0,96%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+        <tr style="background:#fffde7"><td><b>Kota Batu ★</b></td><td>618</td><td>Rp3,48 M</td><td>0,42%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+      </table>
+      <div style="font-size:11px;color:var(--text2);padding-top:6px">★ = Lingkup KPPN Malang · Total Jatim: 148.023 debitur · Share KPPN: 15,81%</div>
+    </div>
+  </div>
+  <div class="sp2" id="sub-triwulan">
+    <div class="cd"><div class="ct">Tren triwulanan — jumlah debitur per wilayah</div><div style="position:relative;height:210px"><canvas id="ctw1"></canvas></div></div>
+    <div class="cd"><div class="ct">Tren triwulanan — nilai penyaluran (Rp M)</div><div style="position:relative;height:210px"><canvas id="ctw2"></canvas></div></div>
+    <div class="cd"><div class="ct">Tren triwulanan — rasio nilai per debitur (Rp ribu/orang)</div><div style="font-size:12px;color:var(--text2);margin-bottom:6px">Kenaikan rasio tanpa kenaikan debitur = kebutuhan per orang meningkat</div><div style="position:relative;height:200px"><canvas id="ctw3"></canvas></div></div>
+  </div>
+  <div class="sp2" id="sub-demografi">
+    <div class="r2"><div class="cd" style="margin:0"><div class="ct">Sebaran usia debitur</div><div style="position:relative;height:190px"><canvas id="cd1"></canvas></div></div><div class="cd" style="margin:0"><div class="ct">Jenis kelamin &amp; skema</div><div style="position:relative;height:190px"><canvas id="cd2"></canvas></div></div></div>
+    <div class="cd"><div class="ct">Distribusi rentang pembiayaan</div><div style="position:relative;height:150px"><canvas id="cd3"></canvas></div></div>
+  </div>
+  <div class="sp2" id="sub-sektor">
+    <div class="cd"><div class="ct">Distribusi sektor usaha debitur</div><div style="position:relative;height:190px"><canvas id="cs1"></canvas></div></div>
+    <div class="cd"><div class="ct">Jenis akad pembiayaan</div><div style="position:relative;height:130px"><canvas id="cs2"></canvas></div></div>
+  </div>
+</div>
+
+<!-- WILAYAH -->
+<div class="pg" id="page-wilayah">
+  <div class="pg-head">
+    <div class="pg-head-l">
+      <div><div style="font-size:17px;font-weight:600">Penyaluran Per Wilayah</div><div style="font-size:11px;color:var(--text2)">Rekap se-Jawa Timur</div></div>
+      <button class="help-btn" onclick="startTut('wilayah')" aria-label="Panduan">?</button>
+    </div>
+    <div class="xb" id="wl-export">
+      <button class="btn-xl" onclick="exportXL('wilayah')"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i>Excel</button>
+      <button class="btn-pdf" onclick="exportPDF('wilayah')"><i class="ti ti-file-text" aria-hidden="true"></i>PDF</button>
+    </div>
+  </div>
+  <div class="tbar" id="wl-filter">
+    <i class="ti ti-filter" style="font-size:14px;color:var(--text2)" aria-hidden="true"></i>
+    <input type="text" id="wl-search" placeholder="Cari kabupaten/kota..." oninput="filterTbl('wl')">
+    <div class="sp3"></div>
+    <select id="wl-kat" onchange="filterTbl('wl')"><option value="">Semua</option><option value="kppn">Lingkup KPPN saja</option><option value="lain">Luar KPPN</option></select>
+    <select id="wl-thn" onchange="applyPeriodUI('wl')"><option value="">Semua Tahun</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option></select>
+    <button class="btn-s" onclick="resetF('wl')">Reset</button>
+  </div>
+  <div class="cd" id="wl-table">
+    <div class="ct">Rekap se-Jawa Timur <span id="wl-count" class="bdg bb">13 wilayah</span></div>
+    <div style="max-height:380px;overflow-y:auto">
+    <table id="tbl-wilayah">
+      <tr><th>Kabupaten/Kota</th><th>Debitur</th><th>Penyaluran (Rp)</th><th>% Jatim</th><th>Ket.</th></tr>
+      <tr data-kat="kppn" style="background:#fffde7"><td><b>Kab. Malang ★</b></td><td>11.006</td><td>61.952.433.600</td><td>7,44%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+      <tr data-kat="kppn" style="background:#fffde7"><td><b>Kab. Pasuruan ★</b></td><td>8.267</td><td>49.139.400.000</td><td>5,98%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+      <tr data-kat="kppn" style="background:#fffde7"><td><b>Kota Malang ★</b></td><td>2.095</td><td>11.554.700.000</td><td>1,41%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+      <tr data-kat="kppn" style="background:#fffde7"><td><b>Kota Pasuruan ★</b></td><td>1.416</td><td>8.224.500.000</td><td>1,00%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+      <tr data-kat="kppn" style="background:#fffde7"><td><b>Kota Batu ★</b></td><td>618</td><td>3.481.000.000</td><td>0,42%</td><td><span class="bdg bb clt" onclick="showSP('kppn')">KPPN</span></td></tr>
+      <tr data-kat="lain"><td>Kab. Jember</td><td>13.634</td><td>73.296.800.000</td><td>8,91%</td><td><span class="bdg" style="background:#f3f4f6;color:var(--text2);cursor:pointer" onclick="showSP('luar-kppn')">Luar KPPN</span></td></tr>
+      <tr data-kat="lain"><td>Kota Surabaya</td><td>12.033</td><td>70.045.500.000</td><td>8,52%</td><td><span class="bdg" style="background:#f3f4f6;color:var(--text2);cursor:pointer" onclick="showSP('luar-kppn')">Luar KPPN</span></td></tr>
+      <tr data-kat="lain"><td>Kab. Probolinggo</td><td>9.596</td><td>55.038.000.000</td><td>6,69%</td><td><span class="bdg" style="background:#f3f4f6;color:var(--text2);cursor:pointer" onclick="showSP('luar-kppn')">Luar KPPN</span></td></tr>
+      <tr data-kat="lain"><td>Kab. Banyuwangi</td><td>8.754</td><td>54.589.100.000</td><td>6,64%</td><td><span class="bdg" style="background:#f3f4f6;color:var(--text2);cursor:pointer" onclick="showSP('luar-kppn')">Luar KPPN</span></td></tr>
+      <tr data-kat="lain"><td>Kab. Bondowoso</td><td>5.171</td><td>26.553.500.000</td><td>3,23%</td><td><span class="bdg" style="background:#f3f4f6;color:var(--text2);cursor:pointer" onclick="showSP('luar-kppn')">Luar KPPN</span></td></tr>
+      <tr data-kat="lain"><td>Kab. Lumajang</td><td>5.612</td><td>29.240.000.000</td><td>3,79%</td><td><span class="bdg" style="background:#f3f4f6;color:var(--text2);cursor:pointer" onclick="showSP('luar-kppn')">Luar KPPN</span></td></tr>
+      <tr data-kat="lain"><td>Kab. Sidoarjo</td><td>5.535</td><td>30.620.000.000</td><td>3,74%</td><td><span class="bdg" style="background:#f3f4f6;color:var(--text2);cursor:pointer" onclick="showSP('luar-kppn')">Luar KPPN</span></td></tr>
+      <tr data-kat="lain"><td>Kab. Bangkalan</td><td>3.490</td><td>22.545.400.000</td><td>2,74%</td><td><span class="bdg" style="background:#f3f4f6;color:var(--text2);cursor:pointer" onclick="showSP('luar-kppn')">Luar KPPN</span></td></tr>
+    </table>
+    </div>
+    <div style="font-size:11px;color:var(--text2);padding-top:6px">★ = KPPN Malang · Total Jatim: 148.023 debitur · Rp822,27 M · Share KPPN: 15,81%</div>
+  </div>
+</div>
+
+<!-- INPUT -->
+<div class="pg" id="page-input">
+  <div class="pg-head">
+    <div class="pg-head-l">
+      <div><div style="font-size:17px;font-weight:600">Input &amp; Pembaruan Data</div><div style="font-size:11px;color:var(--text2)">Upload Excel atau input manual</div></div>
+      <button class="help-btn" onclick="startTut('input')" aria-label="Panduan">?</button>
+    </div>
+    <div class="xb" id="inp-export"></div>
+  </div>
+  <div class="stb" id="inp-tabs">
+    <button class="active" onclick="showSub('sub-upload',this)">Upload Excel</button>
+    <button onclick="showSub('sub-manual',this)">Input Manual</button>
+  </div>
+  <div class="sp2 active" id="sub-upload">
+    <div class="r2">
+      <div>
+        <div class="cd" id="inp-dropzone-card" style="margin-bottom:12px">
+          <div class="ct">Upload file Excel</div>
+          <div class="ub" id="dropzone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+            <i class="ti ti-file-spreadsheet" aria-hidden="true"></i>
+            <div style="font-size:13px;font-weight:500;margin-bottom:3px">Klik atau seret file .xlsx ke sini</div>
+            <div style="font-size:12px;color:var(--text2)">Kolom: Tahun, Bulan, Wilayah, Debitur, Penyaluran</div>
+          </div>
+          <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFileUpload(this)">
+          <div id="upload-status" style="margin-top:7px;font-size:12px;color:var(--text2)"></div>
+        </div>
+        <div class="cd">
+          <div class="ct">Format yang didukung</div>
+          <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text2)">
+            <div><i class="ti ti-check" style="color:var(--gn)" aria-hidden="true"></i> Report Penyaluran Demografi</div>
+            <div><i class="ti ti-check" style="color:var(--gn)" aria-hidden="true"></i> Report Penyaluran Per Wilayah</div>
+            <div><i class="ti ti-check" style="color:var(--gn)" aria-hidden="true"></i> Multi-sheet otomatis terdeteksi</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="cd" id="inp-val-card" style="margin-bottom:12px">
+          <div class="ct">Proses validasi otomatis <span class="bdg bg" id="val-status">Menunggu</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;opacity:.4" id="step1"><i class="ti ti-circle" style="font-size:13px" aria-hidden="true"></i>Membaca struktur file</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;opacity:.4" id="step2"><i class="ti ti-circle" style="font-size:13px" aria-hidden="true"></i>Deteksi kolom &amp; format</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;opacity:.4" id="step3"><i class="ti ti-circle" style="font-size:13px" aria-hidden="true"></i>Validasi kelengkapan data</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;opacity:.4" id="step4"><i class="ti ti-circle" style="font-size:13px" aria-hidden="true"></i>Cek duplikasi &amp; konsistensi</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;opacity:.4" id="step5"><i class="ti ti-circle" style="font-size:13px" aria-hidden="true"></i>Rekonsiliasi data existing</div>
+            <div style="display:flex;align-items:center;gap:7px;font-size:12px;opacity:.4" id="step6"><i class="ti ti-circle" style="font-size:13px" aria-hidden="true"></i>Perbarui dashboard &amp; KPI</div>
+          </div>
+          <div style="margin-top:10px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:3px"><span>Progress</span><span id="prog-pct">0%</span></div><div class="pw"><div class="pf" id="prog-bar" style="width:0%"></div></div></div>
+        </div>
+        <div class="cd" id="result-card" style="display:none"><div class="ct" id="result-title">Hasil validasi</div><div id="result-content"></div></div>
+      </div>
+    </div>
+    <div class="cd" id="preview-card" style="display:none">
+      <div class="ct" id="preview-title">Preview data terunggah</div>
+      <div id="preview-summary" style="display:flex;gap:10px;margin-bottom:10px;font-size:12px;flex-wrap:wrap"></div>
+      <div class="ptbl" id="preview-tbl"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn-p" onclick="commitData()"><i class="ti ti-database-import" aria-hidden="true"></i> Simpan &amp; Sinkronkan</button>
+        <button class="btn-s" onclick="cancelUpload()">Batalkan</button>
+      </div>
+    </div>
+  </div>
+  <div class="sp2" id="sub-manual">
+    <div class="r2">
+      <div class="cd" style="margin:0">
+        <div class="ct">Form input data debitur</div>
+        <div class="fgd">
+          <div class="fg"><label>Nama debitur</label><input type="text" id="inp-nama" placeholder="Nama lengkap"></div>
+          <div class="fg"><label>Wilayah</label><select id="inp-wil"><option>Kab. Malang</option><option>Kota Malang</option><option>Kota Batu</option><option>Kab. Pasuruan</option><option>Kota Pasuruan</option></select></div>
+          <div class="fg"><label>Penyalur</label><select><option>BAV</option><option>Permodalan Nasional Madani</option><option>PT Pegadaian</option><option>Koperasi Mitra Dhuafa</option></select></div>
+          <div class="fg"><label>Periode</label><select><option>Januari</option><option>Februari</option><option>Maret</option><option>April</option><option>Mei</option></select></div>
+          <div class="fg"><label>Nilai pembiayaan (Rp)</label><input type="number" id="inp-nilai" placeholder="Contoh: 5000000"></div>
+          <div class="fg"><label>Status</label><select><option>Tersalurkan</option><option>Pending</option><option>Ditolak</option></select></div>
+          <div class="fg"><label>Jenis kelamin</label><select><option>Perempuan</option><option>Laki-laki</option></select></div>
+          <div class="fg"><label>Skema</label><select><option>Kelompok</option><option>Individu</option></select></div>
+          <div class="fg" style="grid-column:1/-1"><label>Catatan</label><textarea placeholder="Catatan tindak lanjut..."></textarea></div>
+        </div>
+        <div style="display:flex;gap:7px;margin-top:12px">
+          <button class="btn-p" onclick="submitManual()">Preview &amp; Simpan</button>
+          <button class="btn-s" onclick="clearManual()">Bersihkan</button>
+        </div>
+        <div id="manual-preview" style="display:none;background:#f8f9fc;border:1px solid var(--br);border-radius:6px;padding:10px;margin-top:8px;font-size:12px"></div>
+      </div>
+      <div class="cd" style="margin:0">
+        <div class="ct">Auto-validasi</div>
+        <div style="display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text2)">
+          <div><i class="ti ti-check" style="color:var(--gn)" aria-hidden="true"></i> Kelengkapan field wajib</div>
+          <div><i class="ti ti-check" style="color:var(--gn)" aria-hidden="true"></i> Format dan kewajaran nilai</div>
+          <div><i class="ti ti-check" style="color:var(--gn)" aria-hidden="true"></i> Deteksi duplikasi data</div>
+          <div><i class="ti ti-check" style="color:var(--gn)" aria-hidden="true"></i> Rekonsiliasi otomatis</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LAPORAN -->
+<div class="pg" id="page-laporan">
+  <div class="pg-head">
+    <div class="pg-head-l">
+      <div><div style="font-size:17px;font-weight:600">Rekap &amp; Export Laporan</div><div style="font-size:11px;color:var(--text2)">Ekspor dalam format Excel atau PDF</div></div>
+      <button class="help-btn" onclick="startTut('laporan')" aria-label="Panduan">?</button>
+    </div>
+  </div>
+  <div class="tbar" id="lp-filter">
+    <i class="ti ti-filter" style="font-size:14px;color:var(--text2)" aria-hidden="true"></i>
+    <input type="text" placeholder="Cari laporan..."><div class="sp3"></div>
+    <select><option value="">Semua Wilayah</option><option>Kab. Malang</option><option>Kota Malang</option></select>
+    <select><option>Kumulatif 2026</option><option>April 2026</option><option>Triwulan I</option></select>
+  </div>
+  <div class="r2" id="lp-cards">
+    <div class="cd" style="margin:0" id="lp-xl">
+      <div class="ct"><i class="ti ti-file-spreadsheet" style="color:var(--gn)" aria-hidden="true"></i> Export Excel (.xlsx)</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5">Ekspor data penyaluran ke spreadsheet yang dapat dibuka di Excel atau Google Sheets.</div>
+      <div class="fgd" style="margin-bottom:12px">
+        <div class="fg"><label>Wilayah</label><select><option>Semua</option><option>Kab. Malang</option><option>Kota Malang</option></select></div>
+        <div class="fg"><label>Periode</label><select><option>Kumulatif 2026</option><option>April 2026</option></select></div>
+        <div class="fg"><label>Jenis data</label><select><option>Semua data</option><option>Penyaluran saja</option><option>Validasi saja</option></select></div>
+        <div class="fg"><label>Format</label><select><option>Satu sheet</option><option>Multi-sheet per wilayah</option></select></div>
+      </div>
+      <button class="btn-xl" style="width:100%;justify-content:center;padding:9px" onclick="exportXL('laporan')"><i class="ti ti-download" aria-hidden="true"></i> Download Excel (.xlsx)</button>
+    </div>
+    <div class="cd" style="margin:0" id="lp-pdf">
+      <div class="ct"><i class="ti ti-file-text" style="color:var(--rd)" aria-hidden="true"></i> Export PDF</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5">Ekspor laporan siap cetak berisi ringkasan KPI dan tabel data penyaluran.</div>
+      <div class="fgd" style="margin-bottom:12px">
+        <div class="fg"><label>Wilayah</label><select><option>Semua</option><option>Kab. Malang</option><option>Kota Malang</option></select></div>
+        <div class="fg"><label>Periode</label><select><option>Kumulatif 2026</option><option>April 2026</option></select></div>
+        <div class="fg"><label>Konten</label><select><option>Lengkap</option><option>Ringkasan KPI</option><option>Tabel data saja</option></select></div>
+        <div class="fg"><label>Orientasi</label><select><option>Potrait (A4)</option><option>Landscape (A4)</option></select></div>
+      </div>
+      <button class="btn-pdf" style="width:100%;justify-content:center;padding:9px" onclick="exportPDF('laporan')"><i class="ti ti-download" aria-hidden="true"></i> Download PDF</button>
+    </div>
+  </div>
+  <div class="cd">
+    <div class="ct">Ringkasan laporan — KPPN Malang per 19 Mei 2026</div>
+    <div class="r2">
+      <div><div style="font-size:11px;color:var(--text2)">Total Penyaluran</div><div style="font-size:20px;font-weight:600;color:var(--bl)">Rp134,35 Miliar</div></div>
+      <div><div style="font-size:11px;color:var(--text2)">Total Debitur</div><div style="font-size:20px;font-weight:600;color:var(--bl)">23.402</div></div>
+      <div><div style="font-size:11px;color:var(--text2)">Share vs Jatim (debitur)</div><div style="font-size:20px;font-weight:600;color:var(--gn)">15,81%</div></div>
+      <div><div style="font-size:11px;color:var(--text2)">Share vs Jatim (nilai)</div><div style="font-size:20px;font-weight:600;color:var(--gn)">16,34%</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERT -->
+<div class="pg" id="page-alert">
+  <div class="pg-head">
+    <div class="pg-head-l">
+      <div><div style="font-size:17px;font-weight:600">Notifikasi &amp; Early Warning</div><div style="font-size:11px;color:var(--text2)">Deteksi dini otomatis · klik kartu level untuk penjelasan</div></div>
+      <button class="help-btn" onclick="startTut('alert')" aria-label="Panduan">?</button>
+    </div>
+    <div class="xb" id="al-export">
+      <button class="btn-xl" onclick="exportXL('alert')"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i>Excel</button>
+      <button class="btn-pdf" onclick="exportPDF('alert')"><i class="ti ti-file-text" aria-hidden="true"></i>PDF</button>
+    </div>
+  </div>
+  <div class="r3" id="al-kpi">
+    <div class="kc bad" style="cursor:pointer" onclick="showSP('kritis')"><div class="lb">Kritis <i class="ti ti-info-circle" style="font-size:10px" aria-hidden="true"></i></div><div class="vl">3</div><div class="s tf">klik untuk penjelasan</div></div>
+    <div class="kc warn" style="cursor:pointer" onclick="showSP('peringatan')"><div class="lb">Peringatan <i class="ti ti-info-circle" style="font-size:10px" aria-hidden="true"></i></div><div class="vl">7</div><div class="s tf">klik untuk penjelasan</div></div>
+    <div class="kc info" style="cursor:pointer" onclick="showSP('informasi')"><div class="lb">Informasi <i class="ti ti-info-circle" style="font-size:10px" aria-hidden="true"></i></div><div class="vl">12</div><div class="s tf">klik untuk penjelasan</div></div>
+  </div>
+  <div class="tbar" id="al-filter">
+    <i class="ti ti-filter" style="font-size:14px;color:var(--text2)" aria-hidden="true"></i>
+    <input type="text" id="al-search" placeholder="Cari notifikasi..." oninput="filterAlerts()">
+    <div class="sp3"></div>
+    <select id="al-lv" onchange="filterAlerts()"><option value="">Semua Level</option><option>Kritis</option><option>Peringatan</option><option>Informasi</option></select>
+    <select id="al-wil" onchange="filterAlerts()"><option value="">Semua Wilayah</option><option>Kota Pasuruan</option><option>Kota Batu</option><option>Kab. Malang</option><option>Kab. Pasuruan</option></select>
+    <button class="btn-s" onclick="resetF('al')">Reset</button>
+  </div>
+  <div class="cd" id="al-list">
+    <div class="ct">Semua notifikasi <span class="bdg br2" id="al-count">5 ditampilkan</span></div>
+    <div id="alert-list">
+      <div class="al" data-lv="Kritis" data-wil="Kota Pasuruan"><div class="ai bad"><i class="ti ti-alert-octagon" aria-hidden="true"></i></div><div style="flex:1"><div style="font-size:12px;font-weight:500"><span class="bdg br2 clt" onclick="showSP('kritis')" style="margin-right:6px">Kritis</span>Mismatch data — Kota Pasuruan / PT Pegadaian</div><div style="font-size:11px;color:var(--text2)">4 record nilai &gt;Rp10jt tanpa dokumen · rekonsiliasi dengan penyalur</div></div><span class="bdg br2">19 Mei</span></div>
+      <div class="al" data-lv="Kritis" data-wil="Kota Batu"><div class="ai bad"><i class="ti ti-alert-octagon" aria-hidden="true"></i></div><div style="flex:1"><div style="font-size:12px;font-weight:500"><span class="bdg br2 clt" onclick="showSP('kritis')" style="margin-right:6px">Kritis</span>Laporan Maret tidak ditemukan — Kota Batu / BAV</div><div style="font-size:11px;color:var(--text2)">Data Maret 2026 belum masuk · konfirmasi BAV melalui Seksi Bank</div></div><span class="bdg br2">18 Mei</span></div>
+      <div class="al" data-lv="Kritis" data-wil="Kab. Pasuruan"><div class="ai bad"><i class="ti ti-alert-octagon" aria-hidden="true"></i></div><div style="flex:1"><div style="font-size:12px;font-weight:500"><span class="bdg br2 clt" onclick="showSP('kritis')" style="margin-right:6px">Kritis</span>Duplikasi record — Kab. Pasuruan / BAV</div><div style="font-size:11px;color:var(--text2)">12 record duplikat · lakukan de-duplikasi</div></div><span class="bdg br2">17 Mei</span></div>
+      <div class="al" data-lv="Peringatan" data-wil="Kab. Malang"><div class="ai warn"><i class="ti ti-alert-triangle" aria-hidden="true"></i></div><div style="flex:1"><div style="font-size:12px;font-weight:500"><span class="bdg by clt" onclick="showSP('peringatan')" style="margin-right:6px">Peringatan</span>38 record tanpa kode sektor — Kab. Malang / PNM</div><div style="font-size:11px;color:var(--text2)">Lengkapi field Group Sektor sebelum akhir bulan</div></div><span class="bdg by">15 Mei</span></div>
+      <div class="al" data-lv="Informasi" data-wil="Kab. Pasuruan"><div class="ai info"><i class="ti ti-info-circle" aria-hidden="true"></i></div><div style="flex:1"><div style="font-size:12px;font-weight:500"><span class="bdg bb clt" onclick="showSP('informasi')" style="margin-right:6px">Informasi</span>Auto-sync selesai — 156 record dari PNM Kab. Pasuruan</div><div style="font-size:11px;color:var(--text2)">Dashboard diperbarui otomatis</div></div><span class="bdg bb">19 Mei</span></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .mn -->
+</div><!-- end #app -->
+
+<!-- MODAL DETAIL TEMUAN VALIDASI -->
+<div id="finding-overlay" onclick="if(event.target===this)closeFinding()">
+  <div class="fm-modal">
+    <div id="fm-header" style="padding:15px 20px 13px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="fm-icon" style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0"></div>
+        <div>
+          <div id="fm-title" style="font-size:15px;font-weight:600;line-height:1.3"></div>
+          <div id="fm-sub" style="font-size:11px;margin-top:3px;color:var(--text2)"></div>
+        </div>
+      </div>
+      <button onclick="closeFinding()" style="background:rgba(0,0,0,.07);border:none;cursor:pointer;padding:5px 12px;border-radius:6px;font-size:12px;color:var(--text2);flex-shrink:0;white-space:nowrap">Tutup ✕</button>
+    </div>
+    <div style="height:1px;background:var(--br)"></div>
+    <div style="display:flex;border-bottom:1px solid var(--br);overflow-x:auto;padding:0 20px" id="fm-tabs">
+      <button class="fm-tab active" onclick="switchFmTab(0,this)"><i class="ti ti-clipboard-list" aria-hidden="true"></i> Detail Temuan</button>
+      <button class="fm-tab" onclick="switchFmTab(1,this)"><i class="ti ti-table" aria-hidden="true"></i> Record Terdampak</button>
+      <button class="fm-tab" onclick="switchFmTab(2,this)"><i class="ti ti-checklist" aria-hidden="true"></i> Tindak Lanjut</button>
+      <button class="fm-tab" onclick="switchFmTab(3,this)"><i class="ti ti-settings" aria-hidden="true"></i> Kelola Status</button>
+    </div>
+    <div id="fm-tab-0" class="fm-content active"></div>
+    <div id="fm-tab-1" class="fm-content"></div>
+    <div id="fm-tab-2" class="fm-content"></div>
+    <div id="fm-tab-3" class="fm-content"></div>
+  </div>
+</div>
+
+<script>
+const TUTS={
+  dashboard:[
+    {id:'db-export',tag:'1/6',title:'Tombol Export Excel & PDF',desc:'Unduh data halaman ini sebagai file Excel (.xlsx) atau PDF.'},
+    {id:'db-filter',tag:'2/6',title:'Filter & Pencarian',desc:'Saring tampilan berdasarkan wilayah dan bulan. Data menyesuaikan otomatis.'},
+    {id:'db-kpi',tag:'3/6',title:'Kartu KPI',desc:'8 indikator utama: penyaluran, debitur, validasi, mismatch, keterlambatan, wilayah berisiko, data diperbarui, dan tren debitur.'},
+    {id:'db-chart1',tag:'4/6',title:'Grafik Tren & Panel Validasi',desc:'Kiri: tren penyaluran per bulan. Kanan: persentase data valid tiap wilayah (hijau = baik, kuning = perlu perhatian).'},
+    {id:'db-chart2',tag:'5/6',title:'Grafik Analisis Kebutuhan',desc:'Kiri: perbandingan debitur & penyaluran 5 wilayah KPPN. Kanan: posisi KPPN Malang vs top-10 Jawa Timur.'},
+    {id:'db-bottom',tag:'6/6',title:'Tabel Status & Alert',desc:'Tabel status kebutuhan per wilayah (klik badge untuk penjelasan) dan 3 alert dengan prioritas tertinggi.'},
+  ],
+  monitoring:[
+    {id:'mn-export',tag:'1/3',title:'Tombol Export Excel & PDF',desc:'Unduh data tabel yang sedang tampil — termasuk hasil filter aktif.'},
+    {id:'mn-filter',tag:'2/3',title:'Filter & Pencarian',desc:'Cari data dengan keyword, atau filter berdasarkan wilayah, penyalur, dan status.'},
+    {id:'mn-table',tag:'3/3',title:'Tabel Rekap Penyaluran',desc:'Data penyaluran per pasangan wilayah–penyalur. Klik badge Valid / Cek / Mismatch untuk penjelasan.'},
+  ],
+  validasi:[
+    {id:'vl-export',tag:'1/4',title:'Tombol Export Excel & PDF',desc:'Unduh laporan temuan validasi sebagai Excel atau PDF.'},
+    {id:'vl-filter',tag:'2/4',title:'Filter Temuan',desc:'Filter temuan berdasarkan wilayah atau level risiko.'},
+    {id:'vl-kpi',tag:'3/4',title:'Ringkasan Status Validasi',desc:'Total record Valid, Warning (perlu konfirmasi), dan Critical (perlu tindak lanjut segera).'},
+    {id:'vl-table',tag:'4/4',title:'Tabel Detail Temuan',desc:'Daftar temuan validasi. Klik badge Tinggi (merah) atau Sedang (kuning) untuk penjelasan dan tindak lanjut.'},
+  ],
+  analisis:[
+    {id:'an-export',tag:'1/5',title:'Tombol Export Excel & PDF',desc:'Unduh data analisis yang sedang ditampilkan.'},
+    {id:'an-tabs',tag:'2/5',title:'Tab Pilihan Analisis',desc:'Pilih tampilan: Grafik KPPN · vs Jawa Timur · Tren Triwulanan · Demografi · Sektor Usaha.'},
+    {id:'an-filter',tag:'3/5',title:'Filter Analisis',desc:'Saring tampilan berdasarkan wilayah tertentu.'},
+    {id:'an-charts',tag:'4/5',title:'Grafik Debitur & Penyaluran',desc:'Jumlah debitur (kiri) dan nilai penyaluran dalam Rp Miliar (kanan) untuk 5 wilayah KPPN.'},
+    {id:'an-status',tag:'5/5',title:'Tabel Status Kebutuhan',desc:'Analisis kebutuhan masyarakat per wilayah. Klik badge untuk penjelasan lengkap.'},
+  ],
+  wilayah:[
+    {id:'wl-export',tag:'1/3',title:'Tombol Export Excel & PDF',desc:'Unduh tabel rekap penyaluran se-Jawa Timur.'},
+    {id:'wl-filter',tag:'2/3',title:'Filter Wilayah',desc:'Tampilkan semua wilayah, hanya KPPN Malang (kuning), atau hanya luar KPPN.'},
+    {id:'wl-table',tag:'3/3',title:'Tabel Rekap Jawa Timur',desc:'Perbandingan penyaluran se-Jawa Timur. Klik badge KPPN atau Luar KPPN untuk penjelasan kategori.'},
+  ],
+  input:[
+    {id:'inp-export',tag:'1/4',title:'Tombol Export Riwayat',desc:'Unduh audit trail (riwayat perubahan data) sebagai Excel atau PDF.'},
+    {id:'inp-tabs',tag:'2/3',title:'Tab Navigasi',desc:'Upload Excel (data batch dari penyalur) · Input Manual (satuan per debitur).'},
+    {id:'inp-dropzone-card',tag:'3/4',title:'Area Upload Excel',desc:'Seret atau klik untuk memilih file .xlsx. Sistem memvalidasi otomatis sebelum data disimpan.'},
+    {id:'inp-val-card',tag:'4/4',title:'Panel Validasi Otomatis',desc:'6 tahap validasi berjalan otomatis: baca struktur → deteksi kolom → cek kelengkapan → duplikasi → rekonsiliasi → perbarui dashboard.'},
+  ],
+  laporan:[
+    {id:'lp-filter',tag:'1/3',title:'Filter Laporan',desc:'Tentukan wilayah dan periode sebelum mengekspor.'},
+    {id:'lp-xl',tag:'2/3',title:'Export Excel (.xlsx)',desc:'Pilih wilayah, periode, jenis data, dan format sheet, lalu klik Download.'},
+    {id:'lp-pdf',tag:'3/3',title:'Export PDF',desc:'Pilih konten dan orientasi, lalu klik Download. Tab cetak terbuka — gunakan Ctrl+P → Save as PDF.'},
+  ],
+  alert:[
+    {id:'al-export',tag:'1/4',title:'Tombol Export Excel & PDF',desc:'Unduh laporan notifikasi yang ditampilkan.'},
+    {id:'al-kpi',tag:'2/4',title:'Kartu Level Notifikasi',desc:'Klik kartu Kritis / Peringatan / Informasi untuk penjelasan level tersebut dan langkah tindak lanjut.'},
+    {id:'al-filter',tag:'3/4',title:'Filter Notifikasi',desc:'Saring berdasarkan level atau wilayah tertentu.'},
+    {id:'al-list',tag:'4/4',title:'Daftar Notifikasi',desc:'Diurutkan berdasarkan prioritas. Klik badge level di tiap baris untuk penjelasan.'},
+  ],
+};
+
+let cPage='',cStep=0,cHlEl=null;
+function startTut(page){closeSP();cPage=page;cStep=0;showTutStep();}
+function showTutStep(){
+  const steps=TUTS[cPage];if(!steps||cStep>=steps.length){closeTut();return;}
+  const s=steps[cStep];const target=document.getElementById(s.id);if(!target){closeTut();return;}
+  const popup=document.getElementById('tut-popup');const mn=document.getElementById('mn');
+  document.getElementById('tut-tag').textContent='Langkah '+s.tag;
+  document.getElementById('tut-title').textContent=s.title;
+  document.getElementById('tut-desc').textContent=s.desc;
+  document.getElementById('tut-next').textContent=cStep===steps.length-1?'Selesai ✓':'Lanjut →';
+  document.getElementById('tut-back').style.display=cStep>0?'inline-block':'none';
+  document.getElementById('tut-dots').innerHTML=steps.map((_,i)=>`<div class="tp-dot${i===cStep?' on':''}"></div>`).join('');
+  if(cHlEl){cHlEl.classList.remove('hl-ring');cHlEl=null;}
+  target.classList.add('hl-ring');cHlEl=target;
+  const tr=target.getBoundingClientRect();const mr=mn.getBoundingClientRect();
+  const PW=272;const GAP=8;const vH=window.innerHeight;
+  let top,showAbove=false;
+  if(tr.bottom>vH*0.7&&tr.top-mr.top>140){showAbove=true;top=tr.top-mr.top-145-GAP;if(top<0)showAbove=false;}
+  if(!showAbove)top=tr.bottom-mr.top+GAP;
+  let left=tr.left-mr.left;const mW=mn.offsetWidth;
+  if(left+PW>mW-10)left=Math.max(10,mW-PW-10);if(left<10)left=10;
+  const arrowLeft=Math.max(10,Math.min((tr.left+tr.width/2)-(mr.left+left)-9,PW-30));
+  document.getElementById('tut-arr-up').style.marginLeft=arrowLeft+'px';
+  document.getElementById('tut-arr-dn').style.marginLeft=arrowLeft+'px';
+  document.getElementById('tut-arr-up').style.display=showAbove?'none':'block';
+  document.getElementById('tut-arr-dn').style.display=showAbove?'block':'none';
+  popup.style.top=top+'px';popup.style.left=left+'px';popup.style.display='block';
+  setTimeout(()=>target.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+}
+function tutNav(d){cStep+=d;if(cStep<0)cStep=0;if(cStep>=(TUTS[cPage]||[]).length)closeTut();else showTutStep();}
+function closeTut(){document.getElementById('tut-popup').style.display='none';if(cHlEl){cHlEl.classList.remove('hl-ring');cHlEl=null;}}
+
+const SI={
+  valid:{c:'#2e7d32',bg:'#e8f5e9',icon:'ti-check',sub:'Status data penyaluran',title:'Status Valid',p:'Data penyaluran sudah lengkap dan sesuai dengan seluruh ketentuan program UMi.',t:'Format benar, nilai wajar, tidak ada duplikasi, dan konsisten dengan laporan penyalur.',a:'Tidak ada tindak lanjut. Data siap digunakan untuk pelaporan.'},
+  cek:{c:'#e65100',bg:'#fff8e1',icon:'ti-alert-triangle',sub:'Status data penyaluran',title:'Status Perlu Dicek',p:'Ada ketidaksesuaian minor atau data belum lengkap.',t:'Format tanggal tidak sesuai, nilai di luar batas, atau field wajib masih kosong.',a:'Lengkapi data yang kurang, lalu koordinasikan dengan penyalur melalui Seksi Bank.'},
+  mismatch:{c:'#b71c1c',bg:'#ffebee',icon:'ti-x',sub:'Status data penyaluran',title:'Status Mismatch',p:'Data laporan penyalur tidak sesuai dengan data di sistem KPPN.',t:'Selisih nilai lebih dari 10% atau ada data ganda untuk debitur yang sama.',a:'Rekonsiliasi data dengan penyalur melalui Seksi Bank. Perbaiki sesuai hasil rekonsiliasi.'},
+  'r-tinggi':{c:'#b71c1c',bg:'#ffebee',icon:'ti-alert-octagon',sub:'Level risiko temuan validasi',title:'Risiko Tinggi',p:'Temuan serius yang berpotensi mempengaruhi keabsahan data penyaluran.',t:'Nilai tidak wajar, laporan periode tidak ada, atau duplikasi terindikasi.',a:'Hubungi penyalur melalui Seksi Bank untuk klarifikasi. Perbaiki data sesuai hasil koordinasi.'},
+  'r-sedang':{c:'#e65100',bg:'#fff8e1',icon:'ti-alert-triangle',sub:'Level risiko temuan validasi',title:'Risiko Sedang',p:'Temuan yang perlu diperbaiki namun tidak bersifat kritis.',t:'Data kurang lengkap, duplikasi kecil, atau format tidak standar.',a:'Lengkapi data yang kurang dan perbaiki sesuai ketentuan.'},
+  meningkat:{c:'#2e7d32',bg:'#e8f5e9',icon:'ti-trending-up',sub:'Status kebutuhan masyarakat',title:'Kebutuhan Masyarakat Meningkat',p:'Nilai pembiayaan UMi meningkat — kebutuhan modal usaha masyarakat di wilayah ini bertumbuh.',t:'Total penyaluran naik lebih dari 5% dibanding periode sebelumnya.',a:'Pertimbangkan penambahan kapasitas penyalur atau perluasan jangkauan.'},
+  stabil:{c:'#0d47a1',bg:'#ddeeff',icon:'ti-minus',sub:'Status kebutuhan masyarakat',title:'Kondisi Stabil',p:'Tidak ada perubahan signifikan pada jumlah debitur maupun nilai pembiayaan.',t:'Perubahan kurang dari 5% dibanding periode sebelumnya.',a:'Pantau setiap periode dan identifikasi potensi pertumbuhan baru.'},
+  menurun:{c:'#e65100',bg:'#fff8e1',icon:'ti-trending-down',sub:'Status kebutuhan masyarakat',title:'Kebutuhan Masyarakat Menurun',p:'Jumlah debitur atau nilai pembiayaan mengalami penurunan.',t:'Debitur atau nilai penyaluran turun lebih dari 5% dibanding periode sebelumnya.',a:'Evaluasi penyebab penurunan bersama penyalur melalui Seksi Bank.'},
+  kritis:{c:'#b71c1c',bg:'#ffebee',icon:'ti-alert-octagon',sub:'Level notifikasi sistem',title:'Notifikasi Kritis',p:'Masalah serius yang perlu ditindaklanjuti segera oleh Seksi Bank.',t:'Mismatch data, laporan tidak masuk, atau data duplikat signifikan.',a:'Tindak lanjuti segera. Hubungi penyalur melalui Seksi Bank untuk penyelesaian.'},
+  peringatan:{c:'#e65100',bg:'#fff8e1',icon:'ti-alert-triangle',sub:'Level notifikasi sistem',title:'Notifikasi Peringatan',p:'Potensi masalah yang perlu dipantau dan diselesaikan oleh Seksi Bank.',t:'Data tidak lengkap, laporan terlambat, atau tren penurunan debitur.',a:'Tindak lanjuti dalam beberapa hari ke depan melalui koordinasi Seksi Bank.'},
+  informasi:{c:'#0d47a1',bg:'#ddeeff',icon:'ti-info-circle',sub:'Level notifikasi sistem',title:'Notifikasi Informasi',p:'Pemberitahuan rutin sistem — tidak memerlukan tindakan.',t:'Sinkronisasi berhasil, data baru masuk, atau proses otomatis selesai.',a:'Tidak perlu tindak lanjut. Tersimpan otomatis di audit trail.'},
+  kppn:{c:'#0d47a1',bg:'#ddeeff',icon:'ti-building-bank',sub:'Kategori wilayah penyaluran',title:'Wilayah Lingkup KPPN Malang',p:'Wilayah dalam area kerja KPPN Malang yang menjadi tanggung jawab pemantauan dan pelaporan UMi.',t:'5 wilayah: Kab. Malang, Kota Malang, Kota Batu, Kab. Pasuruan, Kota Pasuruan.',a:'Pastikan laporan penyalur di semua wilayah ini masuk tepat waktu ke Seksi Bank.'},
+  'luar-kppn':{c:'#555551',bg:'#f3f4f6',icon:'ti-map-pin',sub:'Kategori wilayah penyaluran',title:'Wilayah di Luar KPPN Malang',p:'Wilayah lain di Jawa Timur yang ditampilkan sebagai data pembanding.',t:'Semua kab/kota Jawa Timur di luar 5 wilayah binaan KPPN Malang.',a:'Gunakan sebagai referensi benchmarking untuk menilai kinerja relatif KPPN Malang.'},
+};
+
+function showSP(key){
+  const d=SI[key];if(!d) return;
+  document.getElementById('sp-head').style.background=d.bg;
+  document.getElementById('sp-icon').style.cssText=`background:${d.c}22;color:${d.c};width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0`;
+  document.getElementById('sp-icon').innerHTML=`<i class="ti ${d.icon}" aria-hidden="true"></i>`;
+  document.getElementById('sp-title').style.color=d.c;document.getElementById('sp-title').textContent=d.title;
+  document.getElementById('sp-sub').style.color=d.c;document.getElementById('sp-sub').textContent=d.sub;
+  document.getElementById('sp-body').innerHTML=`<div><div class="sp-lbl"><i class="ti ti-book-2" aria-hidden="true"></i> Pengertian</div><div class="sp-txt">${d.p}</div></div><div><div class="sp-lbl"><i class="ti ti-bolt" aria-hidden="true"></i> Yang memicunya</div><div class="sp-txt">${d.t}</div></div><div class="sp-act" style="background:${d.bg}"><div class="sp-lbl" style="color:${d.c}"><i class="ti ti-arrow-right" aria-hidden="true"></i> Tindak lanjut</div><div class="sp-txt">${d.a}</div></div>`;
+  document.getElementById('sp-panel').style.display='block';
+  document.getElementById('sp-panel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeSP(){document.getElementById('sp-panel').style.display='none';}
+
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');}
+function showPage(id){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.sb a').forEach(a=>a.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');document.getElementById('nav-'+id).classList.add('active');closeSP();closeTut();if(window.innerWidth<=768)document.getElementById('sidebar').classList.remove('open');if(id==='alert'){const nc=document.querySelector('#nav-alert .nc');if(nc)nc.style.display='none';}}
+function showSub(id,btn){btn.closest('.stb').querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');btn.closest('.pg').querySelectorAll('.sp2').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function setMode(m){document.getElementById('btn-r').classList.toggle('active',m==='r');document.getElementById('btn-d').classList.toggle('active',m==='d');}
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+tick();setInterval(tick,1000);
+
+function filterTbl(p){
+  const s=(document.getElementById(p+'-search')||{value:''}).value.toLowerCase();
+  const w=(document.getElementById(p+'-wil')||{value:''}).value;
+  const py=(document.getElementById(p+'-pny')||{value:''}).value;
+  const st=(document.getElementById(p+'-sts')||{value:''}).value;
+  const rk=(document.getElementById(p+'-risk')||{value:''}).value;
+  const kt=(document.getElementById(p+'-kat')||{value:''}).value;
+  const id={mn:'tbl-monitoring',vl:'tbl-validasi',wl:'tbl-wilayah'}[p];
+  const tbl=document.getElementById(id);if(!tbl) return;
+  let n=0;
+  tbl.querySelectorAll('tr[data-wil],tr[data-kat]').forEach(r=>{
+    const ok=(!s||r.textContent.toLowerCase().includes(s))&&(!w||(r.dataset.wil||'')==w)&&(!py||(r.dataset.pny||'')==py)&&(!st||(r.dataset.sts||'')==st)&&(!rk||(r.dataset.risk||'')==rk)&&(!kt||(r.dataset.kat||'')==kt);
+    r.style.display=ok?'':'none';if(ok)n++;
+  });
+  const c=document.getElementById(p+'-count');if(c)c.textContent=n+' data';
+}
+function filterAlerts(){
+  const s=document.getElementById('al-search').value.toLowerCase();
+  const l=document.getElementById('al-lv').value;
+  const w=document.getElementById('al-wil').value;
+  let n=0;
+  document.querySelectorAll('#alert-list .al').forEach(el=>{
+    const ok=(!s||el.textContent.toLowerCase().includes(s))&&(!l||el.dataset.lv===l)&&(!w||el.dataset.wil===w);
+    el.style.display=ok?'':'none';if(ok)n++;
+  });
+  document.getElementById('al-count').textContent=n+' ditampilkan';
+}
+function resetF(p){['search','wil','pny','sts','risk','kat','lv','bln'].forEach(f=>{const e=document.getElementById(p+'-'+f);if(e)e.value='';});const tE=document.getElementById(p+'-thn');if(tE){const opt=tE.querySelector('option[value="2026"]');if(opt)opt.selected=true;else tE.value='';}if(p==='mn')filterTbl('mn');else if(p==='vl')filterTbl('vl');else if(p==='wl')filterTbl('wl');else if(p==='al')filterAlerts();const lbl=document.getElementById(p+'-period-lbl');if(lbl)lbl.textContent='Kumulatif 2026';}
+
+function exportXL(page){
+  const T={dashboard:'Dashboard_KPI',monitoring:'Penyaluran_UMi',validasi:'Validasi_Data',analisis:'Analisis_Debitur',wilayah:'Per_Wilayah',input:'Riwayat_Data',laporan:'Laporan_Rekap',alert:'Notifikasi'};
+  const wb=XLSX.utils.book_new();let data=[];
+  if(page==='monitoring'){data=[['Wilayah','Penyalur','Debitur','Penyaluran (Rp)','% Total','Status']];document.querySelectorAll('#tbl-monitoring tr[data-wil]:not([style*="none"])').forEach(r=>{data.push([...r.querySelectorAll('td')].map(td=>td.textContent.trim()));});}
+  else if(page==='validasi'){data=[['Wilayah','Penyalur','Jenis Masalah','Record','Risiko']];document.querySelectorAll('#tbl-validasi tr[data-wil]:not([style*="none"])').forEach(r=>{data.push([...r.querySelectorAll('td')].slice(0,5).map(td=>td.textContent.trim()));});}
+  else if(page==='wilayah'){data=[['Kab/Kota','Debitur','Penyaluran (Rp)','% Jatim','Ket']];document.querySelectorAll('#tbl-wilayah tr[data-kat]:not([style*="none"])').forEach(r=>{data.push([...r.querySelectorAll('td')].map(td=>td.textContent.trim()));});}
+  else if(page==='alert'){data=[['Level','Wilayah','Keterangan']];document.querySelectorAll('#alert-list .al:not([style*="none"])').forEach(el=>{data.push([el.dataset.lv,el.dataset.wil,el.querySelector('div').textContent.trim().substring(0,80)]);});}
+  else{data=[['KPI','Nilai'],['Total Penyaluran','Rp134,35 M'],['Total Debitur','23.402'],['Data Valid','94,2%'],['Mismatch','38'],['Kasus Terlambat','7']];}
+  const ws=XLSX.utils.aoa_to_sheet(data);XLSX.utils.book_append_sheet(wb,ws,T[page]||page);
+  XLSX.writeFile(wb,'SiUMi_'+(T[page]||page)+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+function exportPDF(page){
+  const T={dashboard:'Dashboard KPI',monitoring:'Penyaluran UMi',validasi:'Validasi Data',analisis:'Analisis Debitur',wilayah:'Per Wilayah',input:'Riwayat Data',laporan:'Laporan Rekap',alert:'Notifikasi'};
+  const w=window.open('','_blank');if(!w){alert('Izinkan popup untuk export PDF.');return;}
+  let rows='<tr><th>KPI</th><th>Nilai</th></tr><tr><td>Total Penyaluran</td><td>Rp134,35 M</td></tr><tr><td>Total Debitur</td><td>23.402</td></tr><tr><td>Data Valid</td><td>94,2%</td></tr>';
+  if(page==='monitoring'){rows='<tr><th>Wilayah</th><th>Penyalur</th><th>Debitur</th><th>Penyaluran</th><th>Status</th></tr>';document.querySelectorAll('#tbl-monitoring tr[data-wil]:not([style*="none"])').forEach(r=>{rows+='<tr>'+[...r.querySelectorAll('td')].map(td=>'<td>'+td.textContent+'</td>').join('')+'</tr>';});}
+  else if(page==='validasi'){rows='<tr><th>Wilayah</th><th>Penyalur</th><th>Masalah</th><th>Record</th><th>Risiko</th></tr>';document.querySelectorAll('#tbl-validasi tr[data-wil]:not([style*="none"])').forEach(r=>{rows+='<tr>'+[...r.querySelectorAll('td')].slice(0,5).map(td=>'<td>'+td.textContent+'</td>').join('')+'</tr>';});}
+  else if(page==='wilayah'){rows='<tr><th>Kab/Kota</th><th>Debitur</th><th>Penyaluran</th><th>%Jatim</th></tr>';document.querySelectorAll('#tbl-wilayah tr[data-kat]:not([style*="none"])').forEach(r=>{rows+='<tr>'+[...r.querySelectorAll('td')].slice(0,4).map(td=>'<td>'+td.textContent+'</td>').join('')+'</tr>';});}
+  else if(page==='alert'){rows='<tr><th>Level</th><th>Wilayah</th><th>Keterangan</th></tr>';document.querySelectorAll('#alert-list .al:not([style*="none"])').forEach(el=>{rows+='<tr><td>'+el.dataset.lv+'</td><td>'+el.dataset.wil+'</td><td>'+el.querySelector('div').textContent.trim().substring(0,80)+'</td></tr>';});}
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SiUMi — '+(T[page]||page)+'</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#222}h2{color:#0d2951;border-bottom:2px solid #1a5fb4;padding-bottom:6px;margin-bottom:12px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#1a5fb4;color:#fff;padding:7px;text-align:left}td{padding:6px 7px;border-bottom:0.5px solid #ddd}.f{font-size:11px;color:#888;margin-top:14px}@media print{.np{display:none}}</style></head><body><h2>SiUMi — '+(T[page]||page)+'</h2><p style="font-size:12px;color:#666;margin-bottom:10px">KPPN Malang · '+new Date().toLocaleString('id-ID')+'</p><table>'+rows+'</table><div class="f">Sistem Informasi Pemantauan UMi — KPPN Malang 2026</div><div class="np" style="margin-top:14px"><button onclick="window.print()" style="background:#1a5fb4;color:#fff;border:none;padding:7px 18px;border-radius:6px;cursor:pointer">Cetak / Simpan PDF</button></div></body></html>');
+  w.document.close();
+}
+
+let uData=[];
+function handleDrop(e){e.preventDefault();document.getElementById('dropzone').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)processFile(f);}
+function handleFileUpload(i){const f=i.files[0];if(f)processFile(f);}
+function processFile(file){
+  if(!['xlsx','xls','csv'].includes(file.name.split('.').pop().toLowerCase())){document.getElementById('upload-status').innerHTML='<span style="color:red">Format tidak didukung.</span>';return;}
+  document.getElementById('upload-status').innerHTML='Membaca: <b>'+file.name+'</b>';
+  document.getElementById('val-status').textContent='Memproses...';document.getElementById('val-status').className='bdg by';
+  [0,400,800,1200,1600,2100,2700].forEach((t,i)=>{if(!i)return;setTimeout(()=>{
+    const el=document.getElementById('step'+i);if(el){el.style.opacity='1';el.querySelector('i').className='ti ti-'+(i<6?'loader':'check');el.querySelector('i').style.color=i<6?'#1a5fb4':'#2e7d32';}
+    document.getElementById('prog-bar').style.width=[0,18,35,52,70,85,100][i]+'%';
+    document.getElementById('prog-pct').textContent=[0,18,35,52,70,85,100][i]+'%';
+    if(i===6){for(let s=1;s<=6;s++){const x=document.getElementById('step'+s);if(x){x.querySelector('i').className='ti ti-check';x.querySelector('i').style.color='#2e7d32';}}readFile(file);}
+  },t);});
+}
+function readFile(file){const r=new FileReader();r.onload=e=>{try{const wb=XLSX.read(e.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});uData=rows;showPreview(rows,file.name);}catch(err){document.getElementById('upload-status').innerHTML='<span style="color:red">Gagal: '+err.message+'</span>';}};r.readAsArrayBuffer(file);}
+function showPreview(rows,fname){
+  const hdr=rows[1]||rows[0]||[];const dR=rows.slice(2).filter(r=>r.some(c=>c!==''));
+  document.getElementById('preview-card').style.display='block';document.getElementById('preview-title').textContent='Preview: '+fname;
+  document.getElementById('preview-summary').innerHTML='<span style="background:#f3f4f6;padding:3px 9px;border-radius:12px"><b>'+dR.length+'</b> baris</span><span style="background:#f3f4f6;padding:3px 9px;border-radius:12px"><b>'+hdr.filter(h=>h!='').length+'</b> kolom</span>';
+  const mR=Math.min(dR.length,10),mC=Math.min(hdr.length,7);
+  let tbl='<table style="font-size:11px"><tr>'+hdr.slice(0,mC).map(h=>'<th>'+h+'</th>').join('')+'</tr>';
+  dR.slice(0,mR).forEach(r=>{tbl+='<tr>'+r.slice(0,mC).map(c=>'<td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c+'</td>').join('')+'</tr>';});
+  if(dR.length>mR)tbl+='<tr><td colspan="'+mC+'" style="text-align:center;font-style:italic;color:#888">... +'+(dR.length-mR)+' baris</td></tr>';
+  document.getElementById('preview-tbl').innerHTML=tbl+'</table>';
+  document.getElementById('val-status').textContent='Siap disimpan';document.getElementById('val-status').className='bdg bg';
+  document.getElementById('result-card').style.display='block';document.getElementById('result-title').textContent='Hasil validasi';
+  document.getElementById('result-content').innerHTML='<div style="font-size:12px;display:flex;flex-direction:column;gap:4px"><div><i class="ti ti-check" style="color:#2e7d32" aria-hidden="true"></i> Struktur dikenali</div><div><i class="ti ti-check" style="color:#2e7d32" aria-hidden="true"></i> '+dR.length+' baris data</div><div><i class="ti ti-check" style="color:#2e7d32" aria-hidden="true"></i> Siap disinkronkan ke dashboard</div></div>';
+  addAudit(fname,dR.length);
+}
+function commitData(){document.getElementById('preview-card').style.display='none';document.getElementById('upload-status').innerHTML='<i class="ti ti-check" style="color:#2e7d32" aria-hidden="true"></i> Data disimpan dan dashboard diperbarui.';}
+function cancelUpload(){document.getElementById('preview-card').style.display='none';uData=[];}
+function addAudit(){}
+function submitManual(){const n=document.getElementById('inp-nama').value,v=document.getElementById('inp-nilai').value,w=document.getElementById('inp-wil').value;if(!n||!v){alert('Nama dan nilai wajib diisi!');return;}const b=document.getElementById('manual-preview');b.style.display='block';b.innerHTML='<b>Preview:</b> '+n+' · '+w+' · Rp'+parseInt(v).toLocaleString('id-ID')+'<br><button onclick="confirmManual()" style="background:#1a5fb4;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;font-size:11px;margin-top:5px">Konfirmasi Simpan</button>';}
+function confirmManual(){document.getElementById('manual-preview').innerHTML='<span style="color:#2e7d32">✓ Data disimpan dan dashboard diperbarui.</span>';setTimeout(()=>document.getElementById('manual-preview').style.display='none',3000);}
+function clearManual(){document.getElementById('inp-nama').value='';document.getElementById('inp-nilai').value='';document.getElementById('manual-preview').style.display='none';}
+
+const D={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+const W=['Kab. Malang','Kota Malang','Kota Batu','Kab. Pasuruan','Kota Pasuruan'];
+const DEB=[11006,2095,618,8267,1416],PNY=[61.95,11.55,3.48,49.14,8.22];
+new Chart(document.getElementById('c1'),{type:'bar',data:{labels:['Jan','Feb','Mar','Apr'],datasets:[{data:[42,118,0,82],backgroundColor:'#1a5fb4',type:'bar',yAxisID:'y'},{data:[8200,22100,0,23400],borderColor:'#2e7d32',backgroundColor:'transparent',type:'line',yAxisID:'y1',borderDash:[4,4],pointRadius:4,pointStyle:'triangle'}]},options:{...D,scales:{y:{position:'left',ticks:{font:{size:10}}},y1:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:10},color:'#2e7d32'}}}}});
+new Chart(document.getElementById('c2'),{type:'bar',data:{labels:W,datasets:[{data:DEB,backgroundColor:'#1a5fb4',borderRadius:3},{data:PNY,backgroundColor:'#2e7d32',borderRadius:3}]},options:{...D,scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+const tJ=['Kab.Jember','Kota Surabaya','Kab.Malang★','Kab.Probolinggo','Kab.Banyuwangi','Kab.Pasuruan★','Kab.Lumajang','Kab.Sidoarjo','Kab.Bondowoso','Kota Malang★'],tD=[13634,12033,11006,9596,8754,8267,5612,5535,5171,2095],tC=['#d85a30','#d85a30','#1a5fb4','#d85a30','#d85a30','#1a5fb4','#d85a30','#d85a30','#d85a30','#1a5fb4'];
+new Chart(document.getElementById('c3'),{type:'bar',data:{labels:tJ,datasets:[{data:tD,backgroundColor:tC,borderRadius:2}]},options:{...D,scales:{x:{ticks:{font:{size:8}}},y:{ticks:{font:{size:9}}}}}});
+const anChartInst={};
+const AN_COLORS_W=['#1a5fb4','#3584e4','#63a0d8','#d85a30','#9c27b0'];
+const AN_COLORS_TW=['#1a5fb4','#2e7d32','#f57f17','#d85a30','#9c27b0'];
+anChartInst.ca1=new Chart(document.getElementById('ca1'),{type:'bar',data:{labels:W,datasets:[{data:DEB,backgroundColor:AN_COLORS_W,borderRadius:4}]},options:{...D,scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+anChartInst.ca2=new Chart(document.getElementById('ca2'),{type:'bar',data:{labels:W,datasets:[{data:PNY,backgroundColor:['#2e7d32','#4caf50','#81c784','#2e7d32','#4caf50'],borderRadius:4}]},options:{...D,scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9},callback:v=>v+'M'}}}}});
+anChartInst.cj1=new Chart(document.getElementById('cj1'),{type:'bar',data:{labels:tJ,datasets:[{data:tD,backgroundColor:tC,borderRadius:3,indexAxis:'y'}]},options:{indexAxis:'y',...D,scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+const TW=['TW1 2025','TW2 2025','TW3 2025','TW4 2025','TW1 2026','TW2 2026*'];
+anChartInst.ctw1=new Chart(document.getElementById('ctw1'),{type:'line',data:{labels:TW,datasets:[{label:W[0],data:[8200,9100,9600,10200,10800,11006],borderColor:AN_COLORS_TW[0],backgroundColor:'transparent',pointRadius:4},{label:W[1],data:[1600,1750,1850,1950,2050,2095],borderColor:AN_COLORS_TW[1],backgroundColor:'transparent',borderDash:[4,4],pointRadius:4},{label:W[2],data:[480,520,550,580,600,618],borderColor:AN_COLORS_TW[2],backgroundColor:'transparent',borderDash:[2,2],pointRadius:4},{label:W[3],data:[5800,6400,7000,7500,8000,8267],borderColor:AN_COLORS_TW[3],backgroundColor:'transparent',pointRadius:4},{label:W[4],data:[950,1050,1150,1280,1370,1416],borderColor:AN_COLORS_TW[4],backgroundColor:'transparent',borderDash:[4,4],pointRadius:4}]},options:{...D,scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}}});
+anChartInst.ctw2=new Chart(document.getElementById('ctw2'),{type:'line',data:{labels:TW,datasets:[{label:W[0],data:[42.1,47.8,52.3,56.8,59.2,61.95],borderColor:AN_COLORS_TW[0],backgroundColor:'transparent',pointRadius:4},{label:W[1],data:[7.2,8.1,9.0,10.1,10.8,11.55],borderColor:AN_COLORS_TW[1],backgroundColor:'transparent',borderDash:[4,4],pointRadius:4},{label:W[2],data:[2.0,2.3,2.7,3.0,3.2,3.48],borderColor:AN_COLORS_TW[2],backgroundColor:'transparent',borderDash:[2,2],pointRadius:4},{label:W[3],data:[30.2,34.5,38.8,42.5,46.1,49.14],borderColor:AN_COLORS_TW[3],backgroundColor:'transparent',pointRadius:4},{label:W[4],data:[4.8,5.5,6.2,7.1,7.7,8.22],borderColor:AN_COLORS_TW[4],backgroundColor:'transparent',borderDash:[4,4],pointRadius:4}]},options:{...D,scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9},callback:v=>v+'M'}}}}});
+const dTW=[[8200,9100,9600,10200,10800,11006],[5800,6400,7000,7500,8000,8267],[1600,1750,1850,1950,2050,2095],[950,1050,1150,1280,1370,1416],[480,520,550,580,600,618]];
+const nTW=[[42.1,47.8,52.3,56.8,59.2,61.95],[30.2,34.5,38.8,42.5,46.1,49.14],[7.2,8.1,9.0,10.1,10.8,11.55],[4.8,5.5,6.2,7.1,7.7,8.22],[2.0,2.3,2.7,3.0,3.2,3.48]];
+anChartInst.ctw3=new Chart(document.getElementById('ctw3'),{type:'line',data:{labels:TW,datasets:dTW.map((d,i)=>({label:W[i],data:d.map((v,j)=>parseFloat((nTW[i][j]/v*1000).toFixed(2))),borderColor:AN_COLORS_TW[i],backgroundColor:'transparent',pointRadius:4}))},options:{...D,scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9},callback:v=>v.toFixed(1)+'rb'}}}}});
+anChartInst.cd1=new Chart(document.getElementById('cd1'),{type:'doughnut',data:{labels:['<20th','20-29th','30-39th','40-49th','≥50th'],datasets:[{data:[2,12,28,35,23],backgroundColor:['#e3f0ff','#63a0d8','#3584e4','#1a5fb4','#0d2951'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{font:{size:10},boxWidth:10}}}}});
+anChartInst.cd2=new Chart(document.getElementById('cd2'),{type:'doughnut',data:{labels:['Perempuan-Kelompok','Perempuan-Individu','Laki-Individu'],datasets:[{data:[82,5,13],backgroundColor:['#1a5fb4','#3584e4','#f57f17'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{font:{size:10},boxWidth:10}}}}});
+anChartInst.cd3=new Chart(document.getElementById('cd3'),{type:'bar',data:{labels:['0-2,5jt','2,5-5jt','5-7,5jt','7,5-10jt','>10jt'],datasets:[{data:[8,52,22,10,8],backgroundColor:'#1a5fb4',borderRadius:3}]},options:{...D,scales:{x:{ticks:{font:{size:10}}},y:{ticks:{font:{size:10}}}}}});
+anChartInst.cs1=new Chart(document.getElementById('cs1'),{type:'bar',data:{labels:['Perdagangan Eceran','Jasa Kemasyarakatan','Jasa Pendidikan','Ind. Pengolahan','Konstruksi'],datasets:[{data:[72,14,7,5,2],backgroundColor:AN_COLORS_TW,borderRadius:3}]},options:{...D,scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9},callback:v=>v+'%'}}}}});
+anChartInst.cs2=new Chart(document.getElementById('cs2'),{type:'doughnut',data:{labels:['Konvensional','Syariah'],datasets:[{data:[58,42],backgroundColor:['#1a5fb4','#2e7d32'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{font:{size:11},boxWidth:10}}}}});
+
+/* ================================================================
+   ANALISIS DEBITUR — Per-Year Data & Chart Update
+================================================================ */
+const AN_YEAR_DATA={
+  2024:{
+    debitur:[8500,1650,480,6800,1100],
+    nilai:[44.2,8.1,2.3,35.5,5.9],
+    tren:{
+      lbl:['TW1 2024','TW2 2024','TW3 2024','TW4 2024'],
+      deb:[[7800,8100,8300,8500],[6200,6450,6650,6800],[1500,1580,1620,1650],[1000,1050,1080,1100],[440,455,470,480]],
+      pny:[[40.1,41.8,43.0,44.2],[28.5,30.1,33.0,35.5],[7.0,7.5,7.8,8.1],[4.5,4.8,5.3,5.9],[1.8,1.9,2.1,2.3]],
+    },
+    usia:[3,14,30,36,17],
+    gdrD:[65,6,11],
+    rnk:[12,48,24,12,4],
+    skt:[70,15,8,5,2],
+    akad:[63,37],
+    debTbl:['8.500','1.650','480','6.800','1.100'],
+    nilTbl:['Rp44,2 M','Rp8,1 M','Rp2,3 M','Rp35,5 M','Rp5,9 M'],
+    kondisi:['↑ Naik','→ Stabil','→ Stabil','↑ Naik','→ Stabil'],
+    kondisiCls:['tu','tf','tf','tu','tf'],
+    statusIp:[true,false,false,true,false],
+  },
+  2025:{
+    debitur:[9800,1850,560,7500,1300],
+    nilai:[54.8,10.2,3.0,42.6,7.1],
+    tren:{
+      lbl:['TW1 2025','TW2 2025','TW3 2025','TW4 2025'],
+      deb:[[9000,9300,9600,9800],[6900,7100,7300,7500],[1700,1780,1820,1850],[1180,1230,1270,1300],[510,530,545,560]],
+      pny:[[49.0,51.2,53.0,54.8],[37.2,39.5,41.0,42.6],[8.8,9.3,9.7,10.2],[5.8,6.2,6.7,7.1],[2.3,2.5,2.8,3.0]],
+    },
+    usia:[2,12,28,37,21],
+    gdrD:[79,4,17],
+    rnk:[10,45,27,13,5],
+    skt:[72,14,8,4,2],
+    akad:[60,40],
+    debTbl:['9.800','1.850','560','7.500','1.300'],
+    nilTbl:['Rp54,8 M','Rp10,2 M','Rp3,0 M','Rp42,6 M','Rp7,1 M'],
+    kondisi:['↑ Naik','↑ Naik','→ Stabil','↑ Naik','↑ Naik'],
+    kondisiCls:['tu','tu','tf','tu','tu'],
+    statusIp:[true,true,false,true,true],
+  },
+  2026:{
+    debitur:[11006,2095,618,8267,1416],
+    nilai:[61.95,11.55,3.48,49.14,8.22],
+    tren:{
+      lbl:['TW1 2025','TW2 2025','TW3 2025','TW4 2025','TW1 2026','TW2 2026*'],
+      deb:[[8200,9100,9600,10200,10800,11006],[5800,6400,7000,7500,8000,8267],[1600,1750,1850,1950,2050,2095],[950,1050,1150,1280,1370,1416],[480,520,550,580,600,618]],
+      pny:[[42.1,47.8,52.3,56.8,59.2,61.95],[30.2,34.5,38.8,42.5,46.1,49.14],[7.2,8.1,9.0,10.1,10.8,11.55],[4.8,5.5,6.2,7.1,7.7,8.22],[2.0,2.3,2.7,3.0,3.2,3.48]],
+    },
+    usia:[2,12,28,35,23],
+    gdrD:[82,5,13],
+    rnk:[8,52,22,10,8],
+    skt:[72,14,7,5,2],
+    akad:[58,42],
+    debTbl:['11.006','2.095','618','8.267','1.416'],
+    nilTbl:['Rp61,95 M','Rp11,55 M','Rp3,48 M','Rp49,14 M','Rp8,22 M'],
+    kondisi:['↑ Naik','↑ Naik','→ Stabil','↑ Naik','↑ Naik'],
+    kondisiCls:['tu','tu','tf','tu','tu'],
+    statusIp:[true,true,false,true,true],
+  },
+};
+
+let curAnYear=2026;
+
+function setAnYear(yr){
+  curAnYear=yr;
+  const d=AN_YEAR_DATA[yr];
+  if(!d) return;
+
+  /* --- pill buttons --- */
+  document.querySelectorAll('.an-yr-btn').forEach(b=>{
+    const isActive=parseInt(b.dataset.yr)===yr;
+    b.className=isActive?'btn-p an-yr-btn':'btn-s an-yr-btn';
+    b.style.cssText='font-size:12px;padding:4px 12px';
+  });
+
+  /* --- period label --- */
+  const lbl=document.getElementById('an-period-lbl');
+  if(lbl) lbl.textContent='Kumulatif '+yr;
+
+  /* --- ca1: debitur per wilayah --- */
+  if(anChartInst.ca1){anChartInst.ca1.data.datasets[0].data=d.debitur;anChartInst.ca1.update();}
+
+  /* --- ca2: nilai penyaluran --- */
+  if(anChartInst.ca2){anChartInst.ca2.data.datasets[0].data=d.nilai;anChartInst.ca2.update();}
+
+  /* --- cj1: vs Jawa Timur — skala KPPN saja berubah --- */
+  if(anChartInst.cj1){
+    const scale=d.debitur[0]/11006;
+    anChartInst.cj1.data.datasets[0].data=tD.map((v,i)=>tC[i]==='#1a5fb4'?Math.round(v*scale):v);
+    anChartInst.cj1.update();
+  }
+
+  /* --- ctw1 & ctw2 & ctw3: tren triwulanan --- */
+  if(anChartInst.ctw1){
+    anChartInst.ctw1.data.labels=d.tren.lbl;
+    anChartInst.ctw1.data.datasets.forEach((ds,i)=>{ds.data=d.tren.deb[i]||[];});
+    anChartInst.ctw1.update();
+  }
+  if(anChartInst.ctw2){
+    anChartInst.ctw2.data.labels=d.tren.lbl;
+    anChartInst.ctw2.data.datasets.forEach((ds,i)=>{ds.data=d.tren.pny[i]||[];});
+    anChartInst.ctw2.update();
+  }
+  if(anChartInst.ctw3){
+    anChartInst.ctw3.data.labels=d.tren.lbl;
+    anChartInst.ctw3.data.datasets.forEach((ds,i)=>{
+      const dArr=d.tren.deb[i]||[],nArr=d.tren.pny[i]||[];
+      ds.data=dArr.map((v,j)=>v?parseFloat((nArr[j]/v*1000).toFixed(2)):null);
+    });
+    anChartInst.ctw3.update();
+  }
+
+  /* --- cd1: usia --- */
+  if(anChartInst.cd1){anChartInst.cd1.data.datasets[0].data=d.usia;anChartInst.cd1.update();}
+
+  /* --- cd2: gender/skema --- */
+  if(anChartInst.cd2){anChartInst.cd2.data.datasets[0].data=d.gdrD;anChartInst.cd2.update();}
+
+  /* --- cd3: rentang nilai --- */
+  if(anChartInst.cd3){anChartInst.cd3.data.datasets[0].data=d.rnk;anChartInst.cd3.update();}
+
+  /* --- cs1: sektor --- */
+  if(anChartInst.cs1){anChartInst.cs1.data.datasets[0].data=d.skt;anChartInst.cs1.update();}
+
+  /* --- cs2: akad --- */
+  if(anChartInst.cs2){anChartInst.cs2.data.datasets[0].data=d.akad;anChartInst.cs2.update();}
+
+  /* --- an-status table --- */
+  const rows=document.querySelectorAll('#an-status tbody tr');
+  rows.forEach((r,i)=>{
+    if(!d.debTbl[i]) return;
+    r.cells[1].textContent=d.debTbl[i];
+    r.cells[2].textContent=d.nilTbl[i];
+    r.cells[3].className=d.kondisiCls[i];
+    r.cells[3].textContent=d.kondisi[i];
+    const sp=r.cells[4].querySelector('span');
+    if(sp){
+      const isNaik=d.statusIp[i];
+      sp.className='il '+(isNaik?'ip':'is');
+      sp.textContent=isNaik?'Kebutuhan meningkat':'Stabil';
+      sp.onclick=()=>showSP(isNaik?'meningkat':'stabil');
+    }
+  });
+}
+
+/* ── period filter UI handler (bulan & tahun on toolbar dropdowns) ── */
+const BULAN_NM=['','Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+function applyPeriodUI(p){
+  const bln=(document.getElementById(p+'-bln')||{value:''}).value;
+  const thn=(document.getElementById(p+'-thn')||{value:'2026'}).value||'2026';
+  const lbl=document.getElementById(p+'-period-lbl');
+  if(lbl) lbl.textContent=bln?BULAN_NM[parseInt(bln)]+' '+thn:'Kumulatif '+thn;
+  /* for analisis: switch year data */
+  if(p==='an') setAnYear(parseInt(thn));
+  /* for other pages: just update filter label, run row filter */
+  else if(['mn','vl','wl'].includes(p)) filterTbl(p);
+}
+
+/* ================================================================
+   FINDING MODAL — Detail Temuan Validasi
+================================================================ */
+let curFinding=-1;
+
+const FINDINGS=[
+  {
+    wilayah:'Kota Pasuruan',penyalur:'PT Pegadaian',masalah:'Nilai tidak wajar >Rp10jt',
+    records:4,risiko:'Tinggi',deteksiPada:'19 Mei 2026',
+    deskripsi:'Ditemukan 4 record pembiayaan UMi dari PT Pegadaian Kota Pasuruan dengan nilai melebihi batas maksimum program UMi (>Rp10 juta) tanpa disertai dokumen pendukung yang dapat diverifikasi.',
+    dampak:'Berpotensi melanggar regulasi program UMi. Data tidak dapat dijadikan dasar pelaporan ke Komite UMi tanpa rekonsiliasi dan klarifikasi penyalur.',
+    riwayat:[
+      {id:'UMI-KPS-2026-0041',debitur:'Sari Wahyuni',nilai:'Rp 12.500.000',tanggal:'15 Apr 2026',ket:'Nilai melebihi batas'},
+      {id:'UMI-KPS-2026-0053',debitur:'Budi Santoso',nilai:'Rp 11.000.000',tanggal:'17 Apr 2026',ket:'Nilai melebihi batas'},
+      {id:'UMI-KPS-2026-0067',debitur:'Rina Marlina',nilai:'Rp 15.000.000',tanggal:'20 Apr 2026',ket:'Nilai melebihi batas'},
+      {id:'UMI-KPS-2026-0072',debitur:'Hendra Prasetyo',nilai:'Rp 13.200.000',tanggal:'22 Apr 2026',ket:'Nilai melebihi batas'},
+    ],
+    tindakLanjut:[
+      'Hubungi PT Pegadaian melalui Seksi Bank untuk klarifikasi dan permintaan dokumen pendukung ke-4 record tersebut.',
+      'Minta surat konfirmasi dari penyalur disertai lampiran perjanjian pembiayaan yang sah.',
+      'Jika tidak ada dokumen pendukung yang valid, ajukan permohonan koreksi data ke Komite UMi sesuai prosedur.',
+      'Lakukan rekonsiliasi data antara sistem KPPN dan sistem penyalur, dokumentasikan hasilnya.',
+      'Perbarui status temuan ini setelah proses rekonsiliasi selesai dan data telah dikoreksi.',
+    ],
+    status:'Baru',catatan:'',auditTrail:[],
+  },
+  {
+    wilayah:'Kota Batu',penyalur:'BAV (PT Bahana Artha Ventura)',masalah:'Laporan Maret tidak ada',
+    records:1,risiko:'Tinggi',deteksiPada:'18 Mei 2026',
+    deskripsi:'Laporan penyaluran BAV untuk periode Maret 2026 di wilayah Kota Batu belum diterima oleh Seksi Bank KPPN Malang hingga tanggal pemantauan (18 Mei 2026).',
+    dampak:'Data penyaluran Maret 2026 di Kota Batu tidak lengkap, berpotensi menyebabkan undercount debitur pada pelaporan triwulanan I/2026.',
+    riwayat:[
+      {id:'BAV-BTU-MAR-2026',debitur:'Seluruh debitur BAV Kota Batu',nilai:'Belum diketahui',tanggal:'Maret 2026',ket:'Laporan belum diterima'},
+    ],
+    tindakLanjut:[
+      'Kirim surat teguran resmi kepada BAV melalui Seksi Bank mengenai ketersediaan laporan Maret 2026.',
+      'Tetapkan batas waktu penyerahan laporan (maksimal 7 hari kalender sejak teguran dikirimkan).',
+      'Jika laporan tetap tidak tersedia setelah batas waktu, eskalasikan ke Kepala Seksi Bank untuk penanganan lebih lanjut.',
+      'Dokumentasikan seluruh kronologi teguran, respons BAV, dan hasil koordinasi di sistem audit trail.',
+      'Perbarui status temuan setelah laporan Maret diterima dan berhasil diverifikasi.',
+    ],
+    status:'Baru',catatan:'',auditTrail:[],
+  },
+  {
+    wilayah:'Kab. Malang',penyalur:'PNM (Permodalan Nasional Madani)',masalah:'Kode sektor kosong',
+    records:38,risiko:'Sedang',deteksiPada:'15 Mei 2026',
+    deskripsi:'Sebanyak 38 record penyaluran PNM di Kab. Malang tidak memiliki kode sektor usaha (field "Group Sektor"), sehingga analisis distribusi sektoral tidak dapat dilakukan untuk record-record tersebut.',
+    dampak:'Analisis distribusi sektor usaha debitur menjadi tidak akurat. Field wajib untuk pelaporan ke BRI/PIP belum terpenuhi pada 38 record ini.',
+    riwayat:[
+      {id:'PNM-KBM-2026-0188',debitur:'Dewi Anggraeni',nilai:'Rp 3.000.000',tanggal:'10 Apr 2026',ket:'Kode Sektor Kosong'},
+      {id:'PNM-KBM-2026-0192',debitur:'Fatimah Zahra',nilai:'Rp 2.500.000',tanggal:'11 Apr 2026',ket:'Kode Sektor Kosong'},
+      {id:'PNM-KBM-2026-0201',debitur:'Sri Rahayu',nilai:'Rp 4.000.000',tanggal:'12 Apr 2026',ket:'Kode Sektor Kosong'},
+      {id:'PNM-KBM-2026-0215',debitur:'Nurhayati',nilai:'Rp 2.000.000',tanggal:'14 Apr 2026',ket:'Kode Sektor Kosong'},
+      {id:'... (+34 record)',debitur:'34 debitur lainnya',nilai:'—',tanggal:'Apr 2026',ket:'Kode Sektor Kosong'},
+    ],
+    tindakLanjut:[
+      'Minta PNM untuk melengkapi kode sektor usaha pada 38 record melalui mekanisme amandemen data.',
+      'Sediakan daftar kode sektor yang valid (perdagangan eceran, jasa kemasyarakatan, industri pengolahan, dll.) kepada PNM sebagai referensi.',
+      'Tetapkan batas waktu pengisian field kode sektor (akhir bulan berjalan).',
+      'Validasi ulang secara otomatis setelah PNM mengirimkan data koreksi.',
+      'Pastikan field Group Sektor ditetapkan sebagai field wajib pada template laporan periode berikutnya.',
+    ],
+    status:'Dalam Proses',catatan:'Sudah dikirim surat teguran ke PNM tanggal 16 Mei 2026. Menunggu respons dan data koreksi.',
+    auditTrail:['16 Mei 2026 · Status awal: Baru → Dalam Proses · Surat teguran dikirim ke PNM'],
+  },
+  {
+    wilayah:'Kab. Pasuruan',penyalur:'BAV (PT Bahana Artha Ventura)',masalah:'Duplikasi nama linkage',
+    records:12,risiko:'Sedang',deteksiPada:'17 Mei 2026',
+    deskripsi:'Terdeteksi 12 record dengan nama kelompok/linkage yang terduplikasi pada laporan BAV untuk Kab. Pasuruan, yang berpotensi merupakan kesalahan entri ganda.',
+    dampak:'Jumlah debitur efektif bisa lebih sedikit dari yang dilaporkan. Rekonsiliasi diperlukan untuk memastikan keaslian masing-masing record.',
+    riwayat:[
+      {id:'BAV-KPS-2026-0034',debitur:'Kelompok Mawar Indah',nilai:'Rp 25.000.000',tanggal:'5 Apr 2026',ket:'Duplikat (entry ke-1)'},
+      {id:'BAV-KPS-2026-0035',debitur:'Kelompok Mawar Indah',nilai:'Rp 25.000.000',tanggal:'5 Apr 2026',ket:'Duplikat (entry ke-2)'},
+      {id:'BAV-KPS-2026-0056',debitur:'Kelompok Melati Jaya',nilai:'Rp 18.000.000',tanggal:'8 Apr 2026',ket:'Duplikat (entry ke-1)'},
+      {id:'BAV-KPS-2026-0057',debitur:'Kelompok Melati Jaya',nilai:'Rp 18.000.000',tanggal:'8 Apr 2026',ket:'Duplikat (entry ke-2)'},
+      {id:'... (+8 record)',debitur:'4 pasang duplikat lainnya',nilai:'—',tanggal:'Apr 2026',ket:'Duplikat Terdeteksi'},
+    ],
+    tindakLanjut:[
+      'Minta BAV mengirimkan data rekonsiliasi lengkap disertai NIK anggota untuk membuktikan setiap record adalah unik.',
+      'Bandingkan NIK debitur anggota pada masing-masing pasangan record yang terdeteksi duplikat.',
+      'Lakukan de-duplikasi jika terbukti entry ganda; tandai sebagai valid jika terbukti kelompok berbeda dengan nama serupa.',
+      'Perbarui jumlah debitur efektif Kab. Pasuruan setelah proses de-duplikasi selesai.',
+      'Dokumentasikan seluruh proses dan hasil de-duplikasi di audit trail sistem.',
+    ],
+    status:'Baru',catatan:'',auditTrail:[],
+  },
+  {
+    wilayah:'Kota Malang',penyalur:'PT Pegadaian',masalah:'Format tanggal tidak konsisten',
+    records:7,risiko:'Sedang',deteksiPada:'15 Mei 2026',
+    deskripsi:'Sebanyak 7 record dari PT Pegadaian Kota Malang menggunakan format tanggal yang tidak standar (MM/DD/YYYY atau DD-Mon-YY), sehingga sistem tidak dapat melakukan parsing dan filter periode secara otomatis.',
+    dampak:'Data tidak dapat diproses untuk filter periode bulanan secara otomatis dan berpotensi menyebabkan error saat rekonsiliasi periodik.',
+    riwayat:[
+      {id:'PGD-KML-2026-0012',debitur:'Ahmad Fauzi',nilai:'Rp 3.500.000',tanggal:'04/15/2026',ket:'Format MM/DD/YYYY'},
+      {id:'PGD-KML-2026-0019',debitur:'Rini Susanti',nilai:'Rp 2.750.000',tanggal:'15-Apr-26',ket:'Format DD-Mon-YY'},
+      {id:'PGD-KML-2026-0023',debitur:'Agus Purnomo',nilai:'Rp 4.200.000',tanggal:'4/22/2026',ket:'Format M/DD/YYYY'},
+      {id:'PGD-KML-2026-0031',debitur:'Siti Aminah',nilai:'Rp 5.000.000',tanggal:'04-25-2026',ket:'Format MM-DD-YYYY'},
+      {id:'... (+3 record)',debitur:'3 debitur lainnya',nilai:'—',tanggal:'Apr 2026',ket:'Format Tidak Standar'},
+    ],
+    tindakLanjut:[
+      'Minta PT Pegadaian untuk mengirimkan ulang laporan dengan format tanggal standar yang ditetapkan: DD/MM/YYYY.',
+      'Sertakan panduan format template terbaru kepada petugas PT Pegadaian Kota Malang.',
+      'Koreksi manual ke-7 record jika nilai tanggal aslinya dapat dikonfirmasi dari dokumen sumber.',
+      'Validasi ulang secara otomatis setelah data koreksi dikirimkan dan diimpor.',
+      'Tambahkan validasi format tanggal pada proses upload template laporan berikutnya.',
+    ],
+    status:'Baru',catatan:'',auditTrail:[],
+  },
+  {
+    wilayah:'Kab. Malang',penyalur:'PT Pegadaian',masalah:'Nilai di bawah minimum',
+    records:3,risiko:'Sedang',deteksiPada:'15 Mei 2026',
+    deskripsi:'Terdapat 3 record pembiayaan dari PT Pegadaian Kab. Malang dengan nilai di bawah batas minimum program UMi (Rp 500.000), yang tidak sesuai dengan ketentuan yang berlaku.',
+    dampak:'Record tidak memenuhi syarat program UMi dan tidak dapat dihitung sebagai penyaluran resmi tanpa klarifikasi lebih lanjut dari penyalur.',
+    riwayat:[
+      {id:'PGD-KBM-2026-0089',debitur:'Sumarni',nilai:'Rp 250.000',tanggal:'18 Apr 2026',ket:'Di Bawah Minimum'},
+      {id:'PGD-KBM-2026-0093',debitur:'Ponimin',nilai:'Rp 350.000',tanggal:'19 Apr 2026',ket:'Di Bawah Minimum'},
+      {id:'PGD-KBM-2026-0101',debitur:'Karsini',nilai:'Rp 400.000',tanggal:'20 Apr 2026',ket:'Di Bawah Minimum'},
+    ],
+    tindakLanjut:[
+      'Klarifikasi ke PT Pegadaian apakah nilai yang tercatat merupakan cicilan angsuran atau nilai total penyaluran.',
+      'Jika merupakan nilai total penyaluran, minta koreksi data atau penjelasan tertulis yang menerangkan dasar nilai tersebut.',
+      'Pisahkan ke-3 record ini dari rekap resmi penyaluran hingga status klarifikasi selesai dan terdokumentasi.',
+      'Dokumentasikan hasil klarifikasi dan keputusan akhir di audit trail sistem.',
+    ],
+    status:'Baru',catatan:'',auditTrail:[],
+  },
+  {
+    wilayah:'Kota Batu',penyalur:'PNM (Permodalan Nasional Madani)',masalah:'Tenor melebihi batas normal',
+    records:2,risiko:'Sedang',deteksiPada:'15 Mei 2026',
+    deskripsi:'Dua record pembiayaan PNM Kota Batu memiliki tenor (jangka waktu) yang melebihi batas normal program UMi (>24 bulan), yang perlu dikonfirmasi apakah menggunakan skema perpanjangan yang diizinkan.',
+    dampak:'Record berisiko tidak sesuai ketentuan program UMi standar. Perlu klarifikasi apakah menggunakan skema perpanjangan atau restrukturisasi yang diizinkan.',
+    riwayat:[
+      {id:'PNM-BTU-2026-0145',debitur:'Wulandari',nilai:'Rp 5.000.000',tanggal:'10 Mar 2026',ket:'Tenor 30 bulan'},
+      {id:'PNM-BTU-2026-0152',debitur:'Rahayu Setiawati',nilai:'Rp 7.500.000',tanggal:'15 Mar 2026',ket:'Tenor 28 bulan'},
+    ],
+    tindakLanjut:[
+      'Konfirmasi ke PNM mengenai skema tenor yang digunakan: apakah merupakan perpanjangan atau restrukturisasi yang memiliki dasar hukum.',
+      'Minta dokumen pendukung perjanjian pembiayaan dan addendum (jika ada) untuk ke-2 record.',
+      'Jika tenor melebihi ketentuan tanpa skema khusus yang diizinkan, ajukan permintaan koreksi resmi ke PNM.',
+      'Pastikan ke-2 record memiliki dokumentasi lengkap sebelum dimasukkan ke laporan resmi triwulan.',
+    ],
+    status:'Baru',catatan:'',auditTrail:[],
+  },
+];
+
+const STATUS_CFG={
+  'Baru':        {badge:'br2', hex:'#b71c1c', btnClass:'fm-btn-lihat-new',    desc:'Temuan baru terdeteksi, belum ada tindakan penanganan.'},
+  'Dalam Proses':{badge:'by',  hex:'#e65100', btnClass:'fm-btn-lihat-progress',desc:'Sedang dalam proses penanganan atau koordinasi dengan penyalur.'},
+  'Selesai':     {badge:'bg',  hex:'#2e7d32', btnClass:'fm-btn-lihat-done',   desc:'Temuan telah diselesaikan dan data sudah dikoreksi.'},
+  'Diabaikan':   {badge:'bb',  hex:'#555',    btnClass:'fm-btn-lihat-ignored',desc:'Temuan diabaikan — pastikan alasan didokumentasikan di catatan.'},
+};
+
+function getStatusBadge(s){const c=STATUS_CFG[s]||STATUS_CFG['Baru'];return `<span class="bdg ${c.badge}">${s}</span>`;}
+
+function syncLihatBtn(idx){
+  const btn=document.getElementById('lihat-btn-'+idx);
+  if(!btn) return;
+  btn.innerHTML=`<i class="ti ti-eye" style="font-size:11px"></i> Lihat`;
+}
+
+function showFinding(idx){
+  curFinding=idx;
+  const f=FINDINGS[idx];
+  const isHigh=f.risiko==='Tinggi';
+  const c=isHigh?'var(--rd)':'var(--yw)';
+  const bg=isHigh?'#fff0f0':'#fff9e6';
+  const icon=isHigh?'ti-alert-octagon':'ti-alert-triangle';
+
+  /* --- header --- */
+  document.getElementById('fm-header').style.background=bg;
+  const fmIcon=document.getElementById('fm-icon');
+  fmIcon.style.cssText=`width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;background:${isHigh?'rgba(183,28,28,.15)':'rgba(229,115,0,.15)'};color:${c}`;
+  fmIcon.innerHTML=`<i class="ti ${icon}" aria-hidden="true"></i>`;
+  document.getElementById('fm-title').textContent=f.masalah;
+  document.getElementById('fm-title').style.color=c;
+  document.getElementById('fm-sub').textContent=`${f.wilayah}  ·  ${f.penyalur}  ·  Terdeteksi ${f.deteksiPada}`;
+
+  /* --- Tab 0: Detail --- */
+  document.getElementById('fm-tab-0').innerHTML=`
+    <div class="fm-grid">
+      <div class="fm-info-box"><div class="fm-lbl"><i class="ti ti-map-pin" aria-hidden="true"></i> Wilayah</div><div class="fm-val" style="font-weight:600">${f.wilayah}</div></div>
+      <div class="fm-info-box"><div class="fm-lbl"><i class="ti ti-building-bank" aria-hidden="true"></i> Penyalur</div><div class="fm-val" style="font-weight:600">${f.penyalur}</div></div>
+      <div class="fm-info-box"><div class="fm-lbl"><i class="ti ti-alert-circle" aria-hidden="true"></i> Jenis Masalah</div><div class="fm-val">${f.masalah}</div></div>
+      <div class="fm-info-box"><div class="fm-lbl"><i class="ti ti-database" aria-hidden="true"></i> Record Terdampak</div><div class="fm-val"><span style="font-size:22px;font-weight:700;color:${c}">${f.records}</span> <span style="font-size:12px">record</span></div></div>
+    </div>
+    <div class="fm-info-box" style="margin-bottom:12px">
+      <div class="fm-lbl"><i class="ti ti-book-2" aria-hidden="true"></i> Deskripsi Temuan</div>
+      <div class="fm-val" style="margin-top:5px;line-height:1.7">${f.deskripsi}</div>
+    </div>
+    <div class="fm-info-box" style="background:${bg};border:1px solid ${isHigh?'rgba(183,28,28,.2)':'rgba(229,115,0,.2)'}">
+      <div class="fm-lbl" style="color:${c}"><i class="ti ti-bolt" aria-hidden="true"></i> Potensi Dampak</div>
+      <div class="fm-val" style="margin-top:5px;line-height:1.7">${f.dampak}</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:12px;border-top:1px solid var(--br);flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center;font-size:12px">
+        <span style="color:var(--text2)">Status saat ini:</span>${getStatusBadge(f.status)}
+      </div>
+      <span style="font-size:11px;color:var(--text2)">Level risiko: <b>${f.risiko}</b></span>
+    </div>`;
+
+  /* --- Tab 1: Records --- */
+  const trHTML=f.riwayat.map(r=>`<tr><td style="font-size:11px;color:var(--text2)">${r.id}</td><td>${r.debitur}</td><td>${r.nilai}</td><td>${r.tanggal}</td><td><span class="bdg br2" style="font-size:10px">${r.ket}</span></td></tr>`).join('');
+  document.getElementById('fm-tab-1').innerHTML=`
+    <div style="margin-bottom:10px;padding:8px 12px;background:#f8f9fc;border-radius:7px;font-size:12px;color:var(--text2)">
+      <i class="ti ti-info-circle" aria-hidden="true"></i> Menampilkan <b>${f.riwayat.length}</b> dari <b>${f.records}</b> record terdampak. Data sample diambil dari laporan penyalur.
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <tr><th>ID Record</th><th>Debitur / Kelompok</th><th>Nilai</th><th>Tanggal</th><th>Keterangan</th></tr>
+      ${trHTML}
+    </table>
+    </div>`;
+
+  /* --- Tab 2: Tindak Lanjut --- */
+  const stepsHTML=f.tindakLanjut.map((s,i)=>`<div class="step-item"><div class="step-num">${i+1}</div><div class="step-text">${s}</div></div>`).join('');
+  document.getElementById('fm-tab-2').innerHTML=`
+    <div style="margin-bottom:13px;padding:10px 13px;background:#e8f5e9;border-radius:8px;font-size:12px;color:#1b5e20;display:flex;gap:7px;align-items:flex-start">
+      <i class="ti ti-bulb" style="flex-shrink:0;margin-top:1px" aria-hidden="true"></i>
+      <span>Ikuti langkah-langkah berikut secara berurutan. Koordinasikan dengan penyalur melalui <b>Seksi Bank</b> dan perbarui status di tab <b>Kelola Status</b>.</span>
+    </div>
+    ${stepsHTML}`;
+
+  /* --- Tab 3: Status --- */
+  renderFmStatusTab(f);
+
+  /* Reset tabs to first */
+  document.querySelectorAll('#fm-tabs .fm-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.fm-content').forEach(ct=>ct.classList.remove('active'));
+  document.querySelectorAll('#fm-tabs .fm-tab')[0].classList.add('active');
+  document.getElementById('fm-tab-0').classList.add('active');
+
+  document.getElementById('finding-overlay').style.display='block';
+  document.body.style.overflow='hidden';
+}
+
+function renderFmStatusTab(f){
+  const opts=['Baru','Dalam Proses','Selesai','Diabaikan'];
+  const optHTML=opts.map(o=>`<option value="${o}"${f.status===o?' selected':''}>${o}</option>`).join('');
+  const auditHTML=f.auditTrail&&f.auditTrail.length
+    ? f.auditTrail.map(a=>`<div style="padding:4px 0;border-bottom:1px solid #eee;font-size:11px">${a}</div>`).join('')
+    :'<span style="font-style:italic;font-size:12px">Belum ada riwayat perubahan status.</span>';
+
+  document.getElementById('fm-tab-3').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div>
+        <div class="fm-lbl" style="margin-bottom:8px"><i class="ti ti-flag" aria-hidden="true"></i> Status Penanganan</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select class="fm-status-sel" id="fm-status-sel" onchange="updateFmStatusPreview()">
+            ${optHTML}
+          </select>
+          <div id="fm-status-preview" style="font-size:12px;color:var(--text2);flex:1"></div>
+        </div>
+      </div>
+      <div>
+        <div class="fm-lbl" style="margin-bottom:8px"><i class="ti ti-notes" aria-hidden="true"></i> Catatan Tindak Lanjut</div>
+        <textarea id="fm-catatan"
+          style="width:100%;border:1px solid var(--br);border-radius:7px;padding:9px 11px;font-size:13px;resize:vertical;min-height:90px;font-family:inherit;color:var(--text);outline:none;transition:border-color .15s"
+          onfocus="this.style.borderColor='var(--bl)'"
+          onblur="this.style.borderColor='var(--br)'"
+          placeholder="Isi catatan: hasil koordinasi, kendala, atau informasi tambahan...">${f.catatan}</textarea>
+      </div>
+      <div>
+        <div class="fm-lbl" style="margin-bottom:8px"><i class="ti ti-history" aria-hidden="true"></i> Riwayat Perubahan Status</div>
+        <div id="fm-audit-trail" style="background:#f8f9fc;border-radius:8px;padding:10px 12px;max-height:130px;overflow-y:auto;line-height:1.6">
+          ${auditHTML}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn-p" onclick="saveFindingStatus()" style="display:inline-flex;align-items:center;gap:5px">
+          <i class="ti ti-device-floppy" aria-hidden="true"></i> Simpan Status
+        </button>
+        <button class="btn-s" onclick="switchFmTab(0,document.querySelectorAll('#fm-tabs .fm-tab')[0])">Kembali ke Detail</button>
+      </div>
+      <div id="fm-save-msg" style="display:none;font-size:12px;color:#1b5e20;padding:8px 12px;background:#e8f5e9;border-radius:7px;display:none;align-items:center;gap:6px">
+        <i class="ti ti-check" aria-hidden="true"></i> Status berhasil disimpan dan diperbarui.
+      </div>
+    </div>`;
+  updateFmStatusPreview();
+}
+
+function updateFmStatusPreview(){
+  const sel=document.getElementById('fm-status-sel');
+  if(!sel) return;
+  const cfg=STATUS_CFG[sel.value]||STATUS_CFG['Baru'];
+  const el=document.getElementById('fm-status-preview');
+  if(el) el.textContent=cfg.desc;
+}
+
+function saveFindingStatus(){
+  if(curFinding<0) return;
+  const sel=document.getElementById('fm-status-sel');
+  const cat=document.getElementById('fm-catatan');
+  if(!sel||!cat) return;
+  const f=FINDINGS[curFinding];
+  const oldStatus=f.status;
+  const newStatus=sel.value;
+  f.status=newStatus;
+  f.catatan=cat.value.trim();
+
+  const now=new Date().toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  if(oldStatus!==newStatus) f.auditTrail.unshift(`${now} · Status diubah: <b>${oldStatus}</b> → <b>${newStatus}</b>`);
+  if(f.catatan) f.auditTrail.unshift(`${now} · Catatan diperbarui`);
+
+  /* refresh audit trail display */
+  const auditEl=document.getElementById('fm-audit-trail');
+  if(auditEl) auditEl.innerHTML=f.auditTrail.length
+    ? f.auditTrail.map(a=>`<div style="padding:4px 0;border-bottom:1px solid #eee;font-size:11px">${a}</div>`).join('')
+    :'<span style="font-style:italic;font-size:12px">Belum ada riwayat perubahan status.</span>';
+
+  /* update detail tab status badge */
+  const detailStatusEl=document.querySelector('#fm-tab-0 .bdg');
+  if(detailStatusEl){const cfg=STATUS_CFG[newStatus]||STATUS_CFG['Baru'];detailStatusEl.className=`bdg ${cfg.badge}`;detailStatusEl.textContent=newStatus;}
+
+  /* update Lihat button color in table */
+  syncLihatBtn(curFinding);
+
+  /* show success toast */
+  const msg=document.getElementById('fm-save-msg');
+  if(msg){msg.style.display='flex';clearTimeout(msg._t);msg._t=setTimeout(()=>msg.style.display='none',2800);}
+}
+
+function closeFinding(){
+  document.getElementById('finding-overlay').style.display='none';
+  document.body.style.overflow='';
+}
+
+function switchFmTab(idx,btn){
+  document.querySelectorAll('#fm-tabs .fm-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.fm-content').forEach(ct=>ct.classList.remove('active'));
+  document.getElementById('fm-tab-'+idx).classList.add('active');
+  /* re-render status tab to reflect latest state */
+  if(idx===3&&curFinding>=0) renderFmStatusTab(FINDINGS[curFinding]);
+}
+
+/* sync initial button colors based on pre-set statuses */
+(function(){
+  FINDINGS.forEach((_,i)=>syncLihatBtn(i));
+  const k=document.querySelectorAll('#alert-list .al[data-lv="Kritis"]').length;
+  const nc=document.querySelector('#nav-alert .nc');
+  if(nc){nc.textContent=k;nc.style.display=k>0?'':'none';}
+})();
+</script>
+</body>
+</html>
